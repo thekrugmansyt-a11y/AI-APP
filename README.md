@@ -1,1 +1,1 @@
-# kifas-game
+# svadba-game
