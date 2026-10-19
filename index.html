@@ -1,0 +1,949 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>КИФАС.РУ — Доставка вкусной еды</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --primary: #f4511e;
+    --primary-hover: #e64a19;
+    --text: #212121;
+    --text-muted: #757575;
+    --border: #e0e0e0;
+    --success: #4caf50;
+    --bank-blue: #1976d2;
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background-color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
+    max-height: 850px;
+    background-color: var(--bg);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 50px rgba(0,0,0,0.2);
+  }
+
+  /* --- ОСНОВНОЙ ИНТЕРФЕЙС --- */
+  #mainUI { display: flex; flex-direction: column; height: 100%; transition: opacity 0.3s; }
+
+  .header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+  .logo-container { display: flex; flex-direction: column; }
+  .logo { font-size: 26px; font-weight: 900; color: var(--primary); letter-spacing: -1px; line-height: 1; }
+  .owner { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+  .address { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .bonus-badge {
+    background: linear-gradient(135deg, #ff9800, #ff5722); color: #fff; padding: 6px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 6px;
+  }
+  .bank-btn {
+    background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; padding: 6px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 6px; border: none; cursor: pointer;
+  }
+
+  .categories {
+    display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto; background: var(--card-bg);
+    scrollbar-width: none; flex-shrink: 0;
+  }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    padding: 8px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+    font-size: 14px; color: var(--text); white-space: nowrap; cursor: pointer; transition: all 0.2s;
+  }
+  .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .content-area { flex: 1; overflow-y: auto; background: var(--bg); padding: 15px 20px 100px 20px; }
+
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  
+  .product-card {
+    background: var(--card-bg); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02);
+    transition: transform 0.1s;
+  }
+  .product-card:active { transform: scale(0.98); }
+
+  .product-img {
+    width: 100%; height: 120px; background: #f0f0f0; border-radius: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;
+  }
+  .product-img img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+  .product-img .fallback-icon { font-size: 50px; }
+
+  .product-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
+  .product-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; flex: 1; line-height: 1.3; }
+  .product-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .product-price { font-size: 16px; font-weight: 800; }
+  .add-btn {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; border: none;
+    font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+
+  /* Задания */
+  .task-card {
+    background: var(--card-bg); border-radius: var(--radius); padding: 15px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border-left: 5px solid var(--primary);
+  }
+  .task-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .task-info p { font-size: 12px; color: var(--text-muted); }
+  .task-reward { font-size: 16px; font-weight: 800; color: var(--success); margin-top: 8px; }
+  .task-btn { padding: 8px 16px; border-radius: 12px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; min-width: 90px; }
+  .task-btn.claim { background: var(--success); color: #fff; }
+  .task-btn.progress { background: #e0e0e0; color: #757575; cursor: not-allowed; }
+  .task-btn.done { background: #ccc; color: #666; cursor: not-allowed; }
+
+  /* Корзина */
+  .cart-panel {
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--card-bg);
+    border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1); transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 20; display: flex; flex-direction: column; max-height: 70%;
+  }
+  .cart-panel.active { transform: translateY(0); }
+  .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  .close-cart { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; }
+  .cart-items { flex: 1; overflow-y: auto; margin-bottom: 15px; }
+  .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 10px; }
+  .qty-controls { display: flex; align-items: center; gap: 8px; }
+  .qty-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+  .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-bottom: 15px; border-top: 2px solid var(--bg); padding-top: 10px; }
+  .checkout-btn { width: 100%; padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  
+  .floating-cart-btn {
+    position: absolute; bottom: 20px; left: 20px; right: 20px; background: var(--text); color: #fff;
+    padding: 16px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 16px; cursor: pointer; transform: translateY(100px); transition: transform 0.3s; z-index: 15; border: none;
+  }
+  .floating-cart-btn.active { transform: translateY(0); }
+
+  /* Модалка Банка */
+  .modal-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .bank-modal {
+    background: var(--bg); width: 100%; border-top-left-radius: 24px; border-top-right-radius: 24px;
+    padding: 20px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; flex-direction: column; max-height: 85%;
+  }
+  .modal-overlay.active .bank-modal { transform: translateY(0); }
+  
+  .bank-card-display {
+    background: linear-gradient(135deg, #2196f3, #1976d2); border-radius: 16px; padding: 20px; color: #fff;
+    box-shadow: 0 10px 20px rgba(25, 118, 210, 0.3); margin-bottom: 15px; position: relative; overflow: hidden;
+  }
+  .card-balance { font-size: 32px; font-weight: 800; margin: 10px 0; }
+  
+  .wallet-section {
+    background: #fff3e0; border-radius: 16px; padding: 15px; margin-bottom: 15px;
+    display: flex; justify-content: space-between; align-items: center; border: 2px dashed #ff9800;
+  }
+  .wallet-info h4 { color: #e65100; font-size: 14px; }
+  .wallet-info p { font-size: 20px; font-weight: 800; color: #e65100; }
+  .transfer-btn { background: #ff9800; color: #fff; border: none; padding: 10px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+  .bank-history { flex: 1; overflow-y: auto; background: #fff; border-radius: 16px; padding: 15px; }
+  .bank-tx-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  
+  .toast {
+    position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--success); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px;
+    font-weight: 600; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 50; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .push-notification {
+    position: absolute; top: -150px; left: 15px; right: 15px; background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 20px; padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: flex-start; gap: 12px;
+    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 300; border: 1px solid rgba(0,0,0,0.05);
+  }
+  .push-notification.show { top: 15px; }
+  .push-icon {
+    width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #2196f3, #1976d2);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; flex-shrink: 0;
+  }
+  .push-content { flex: 1; }
+  .push-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .push-text { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .push-balance { font-size: 13px; font-weight: 700; color: var(--bank-blue); margin-top: 4px; }
+
+  /* --- МОДАЛКА СОСТАВА КОМБО --- */
+  #comboModal {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; z-index: 180; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  #comboModal.active { opacity: 1; pointer-events: all; }
+  .combo-box {
+    background: #fff; width: 90%; border-radius: 24px; padding: 20px; text-align: left;
+    transform: scale(0.9); transition: transform 0.3s; position: relative;
+  }
+  #comboModal.active .combo-box { transform: scale(1); }
+  .combo-box h2 { font-size: 22px; margin-bottom: 5px; color: var(--text); text-align: center; }
+  .combo-box .combo-price { text-align: center; font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 15px; }
+  .combo-list { list-style: none; margin-bottom: 20px; background: var(--bg); border-radius: 12px; padding: 15px; }
+  .combo-list li { font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;}
+  .combo-list li:last-child { border-bottom: none; }
+  .combo-list li::before { content: '✔'; color: var(--success); font-weight: bold; }
+  .combo-order-btn {
+    width: 100%; padding: 15px; background: var(--primary); color: #fff; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px;
+  }
+  .combo-close-btn {
+    width: 100%; padding: 15px; background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+    border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
+  }
+
+  /* --- ЭКРАН ВЫБОРА МЕСТА --- */
+  #choiceModal {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  #choiceModal.active { opacity: 1; pointer-events: all; }
+  .choice-box {
+    background: #fff; width: 90%; border-radius: 24px; padding: 20px; text-align: center;
+    transform: scale(0.9); transition: transform 0.3s;
+  }
+  #choiceModal.active .choice-box { transform: scale(1); }
+  .choice-box h2 { font-size: 20px; margin-bottom: 20px; color: var(--text); }
+  .choice-btns { display: flex; gap: 10px; }
+  .choice-btn {
+    flex: 1; padding: 20px 10px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .choice-btn .icon { font-size: 32px; }
+  .choice-btn.takeaway { background: #fff3e0; color: #e65100; }
+  .choice-btn.dinein { background: #e3f2fd; color: #1976d2; }
+
+  /* --- ИГРОВЫЕ СЦЕНЫ --- */
+  .scene-screen {
+    position: absolute; inset: 0; z-index: 200; display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+  }
+  .scene-screen.active { opacity: 1; pointer-events: all; }
+
+  #streetScene { background-image: url('https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=800&auto=format&fit=crop'); }
+  #tableScene { background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=800&auto=format&fit=crop'); }
+
+  .receipt-wrapper {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 85%; max-width: 300px; display: flex; flex-direction: column; align-items: center;
+  }
+
+  .receipt-paper {
+    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px);
+    padding: 20px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    width: 100%; text-align: center; position: relative;
+  }
+  
+  .receipt-paper::after {
+    content: ''; position: absolute; bottom: -10px; left: 0; right: 0; height: 10px;
+    background-image: radial-gradient(circle, transparent 70%, rgba(255,255,255,0.95) 70%);
+    background-size: 20px 20px; background-position: bottom;
+  }
+
+  .receipt-title { font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 15px; border-bottom: 2px dashed #ccc; padding-bottom: 10px; }
+  .receipt-items { font-size: 14px; color: var(--text); margin-bottom: 15px; line-height: 1.8; text-align: left;}
+  .receipt-items div { display: flex; justify-content: space-between; }
+  
+  .eat-btn {
+    background: var(--success); color: #fff; border: none; padding: 16px 30px; border-radius: 30px;
+    font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
+    transition: transform 0.2s; width: 100%; margin-top: 20px;
+  }
+  .eat-btn:active { transform: scale(0.95); }
+  
+  .back-btn-small {
+    background: rgba(0,0,0,0.5); color: #fff; border: none; padding: 10px 20px;
+    border-radius: 20px; font-size: 14px; cursor: pointer; margin-top: 20px;
+    backdrop-filter: blur(5px); transition: background 0.2s;
+  }
+  .back-btn-small:hover { background: rgba(0,0,0,0.7); }
+
+  /* Анимация поедания */
+  .eating-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .eating-overlay.active { opacity: 1; pointer-events: all; }
+  .eat-anim { font-size: 80px; animation: bounce 0.5s infinite alternate; }
+  .eating-text { color: #fff; font-size: 24px; font-weight: bold; margin-top: 20px; }
+  
+  @keyframes bounce {
+    from { transform: translateY(0) scale(1); }
+    to { transform: translateY(-20px) scale(1.1); }
+  }
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ПУШ БАНКА -->
+  <div class="push-notification" id="bankPush">
+    <div class="push-icon">🏦</div>
+    <div class="push-content">
+      <div class="push-title">Сообщение от КИФАС.РУ Банк</div>
+      <div class="push-text" id="pushText">Списание средств...</div>
+      <div class="push-balance" id="pushBalance">Остаток: ...</div>
+    </div>
+  </div>
+
+  <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+  <div id="mainUI">
+    <header class="header">
+      <div class="logo-container">
+        <div class="logo">КИФАС.РУ</div>
+        <div class="owner">Владелец ресторана: skipper</div>
+        <div class="address">📍 Ул. Ленина, 10</div>
+      </div>
+      <div class="header-actions">
+        <div class="bonus-badge"><span>🍗</span> <span id="bonusCount">0</span></div>
+        <button class="bank-btn" onclick="openBank()">💳 Банк</button>
+      </div>
+    </header>
+
+    <div class="categories" id="categoriesContainer">
+      <button class="cat-btn active" onclick="switchTab('menu', 'all', this)">🔥 Меню</button>
+      <button class="cat-btn" onclick="switchTab('tasks', null, this)">📋 Задания</button>
+    </div>
+
+    <div class="content-area">
+      <div id="menuContainer">
+        <div class="categories" style="padding: 0 0 15px 0; background: transparent; flex-wrap: wrap; overflow: visible;">
+          <button class="cat-btn active" onclick="filterMenu('all', this)">Всё</button>
+          <button class="cat-btn" onclick="filterMenu('faces', this)">📸 Комбо</button>
+          <button class="cat-btn" onclick="filterMenu('burger', this)">🍔 Бургеры</button>
+          <button class="cat-btn" onclick="filterMenu('chicken', this)">🍗 Курица</button>
+          <button class="cat-btn" onclick="filterMenu('pizza', this)">🍕 Пицца</button>
+          <button class="cat-btn" onclick="filterMenu('rolls', this)">🍣 Роллы</button>
+          <button class="cat-btn" onclick="filterMenu('snacks', this)">🍟 Закуски</button>
+          <button class="cat-btn" onclick="filterMenu('drinks', this)">🥤 Напитки</button>
+          <button class="cat-btn" onclick="filterMenu('desserts', this)">🍦 Десерты</button>
+          <button class="cat-btn" onclick="filterMenu('sauces', this)">🥫 Соусы</button>
+        </div>
+        <div class="menu-grid" id="menuGrid"></div>
+      </div>
+      
+      <div id="tasksContainer" style="display: none;">
+        <div id="tasksList"></div>
+      </div>
+    </div>
+
+    <button class="floating-cart-btn" id="floatingCart" onclick="toggleCart()">
+      <span>Корзина</span>
+      <span><span id="cartCount">0</span> • <span id="cartTotal">0</span> ₽</span>
+    </button>
+
+    <div class="cart-panel" id="cartPanel">
+      <div class="cart-header">
+        <h3>Ваш заказ</h3>
+        <button class="close-cart" onclick="toggleCart()">✕</button>
+      </div>
+      <div class="cart-items" id="cartItemsList"></div>
+      <div class="cart-total"><span>Итого:</span><span><span id="cartTotalPanel">0</span> ₽</span></div>
+      <button class="checkout-btn" onclick="showChoice()">Перейти к оплате</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА СОСТАВА КОМБО -->
+  <div id="comboModal">
+    <div class="combo-box" onclick="event.stopPropagation()">
+      <h2 id="comboTitle">КОМБО</h2>
+      <div class="combo-price" id="comboPrice">0 ₽</div>
+      <ul class="combo-list" id="comboList"></ul>
+      <button class="combo-order-btn" onclick="addComboToCart()">Добавить в корзину</button>
+      <button class="combo-close-btn" onclick="closeCombo()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА БАНКА -->
+  <div class="modal-overlay" id="bankModal" onclick="closeBankOnOverlay(event)">
+    <div class="bank-modal" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+        <h2 style="font-size:20px; font-weight:800; color:#1976d2;">КИФАС.РУ Банк</h2>
+        <button class="close-cart" onclick="closeBank()">✕</button>
+      </div>
+      <div class="bank-card-display">
+        <div style="font-size:18px; font-weight:900; font-style:italic;">KIFAS.RU BANK</div>
+        <div class="card-balance" id="bankBalanceDisplay">0 ₽</div>
+        <div style="font-size:16px; letter-spacing:2px; opacity:0.8;">•••• 4400</div>
+      </div>
+      <div class="wallet-section">
+        <div class="wallet-info">
+          <h4>Кошелек (с заданий)</h4>
+          <p id="walletBalanceDisplay">0 ₽</p>
+        </div>
+        <button class="transfer-btn" onclick="transferToBank()">На карту</button>
+      </div>
+      <div class="bank-history" id="bankHistory"></div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ВЫБОРА МЕСТА -->
+  <div id="choiceModal">
+    <div class="choice-box">
+      <h2>Где будете кушать?</h2>
+      <div class="choice-btns">
+        <button class="choice-btn takeaway" onclick="processCheckout('takeaway')">
+          <span class="icon">🏠</span>
+          С собой
+        </button>
+        <button class="choice-btn dinein" onclick="processCheckout('dinein')">
+          <span class="icon">🍽️</span>
+          В заведении
+        </button>
+      </div>
+      <button class="back-btn-small" onclick="document.getElementById('choiceModal').classList.remove('active')" style="margin-top: 15px; background: transparent; color: #757575; border: 1px solid #ccc;">Отмена</button>
+    </div>
+  </div>
+
+  <!-- СЦЕНА: ДОМ (С СОБОЙ) -->
+  <div class="scene-screen" id="streetScene">
+    <div class="receipt-wrapper">
+      <div class="receipt-paper">
+        <div class="receipt-title">Домашний заказ</div>
+        <div class="receipt-items" id="streetReceiptItems"></div>
+        <button class="eat-btn" onclick="eatFood()">Съесть дома 🍔</button>
+      </div>
+      <button class="back-btn-small" onclick="returnToMenu()">Вернуться в меню</button>
+    </div>
+  </div>
+
+  <!-- СЦЕНА: СТОЛ (В ЗАВЕДЕНИИ) -->
+  <div class="scene-screen" id="tableScene">
+    <div class="receipt-wrapper">
+      <div class="receipt-paper">
+        <div class="receipt-title">Заказ в зале</div>
+        <div class="receipt-items" id="tableReceiptItems"></div>
+        <button class="eat-btn" onclick="eatFood()">Приятного аппетита 🍽️</button>
+      </div>
+      <button class="back-btn-small" onclick="returnToMenu()">Вернуться в меню</button>
+    </div>
+  </div>
+
+  <!-- АНИМАЦИЯ ПОЕДАНИЯ -->
+  <div class="eating-overlay" id="eatingOverlay">
+    <div class="eat-anim">🍔</div>
+    <div class="eating-text">Ням-ням...</div>
+  </div>
+</div>
+
+<script>
+  let audioCtx = null;
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+  function playClickSound() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+  }
+  document.body.addEventListener('pointerdown', initAudio, { once: true });
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button') || e.target.closest('.add-btn') || e.target.closest('.cat-btn') || e.target.closest('.choice-btn') || e.target.closest('.product-card')) {
+      playClickSound();
+    }
+  });
+
+  const storage = {
+    getItem(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+    setItem(key, value) { try { localStorage.setItem(key, value); } catch(e) { } }
+  };
+
+  // Обновленная ссылка на Чрика и составы комбо
+  const menuData = [
+    { id: 1, category: 'faces', title: 'КОМБО ЧРИК', desc: 'Стройка века', price: 349, img: "https://i.postimg.cc/f3t95vp4/photo.jpg", 
+      ingredients: ['Шефбургер Де Люкс', 'Картофель фри (150г)', 'Кола (0.5л)', 'Соус Сырный', 'Игрушка "Каска"'] },
+    { id: 2, category: 'faces', title: 'КОМБО КПНРИДЕР', desc: 'Скорость и адреналин', price: 299, img: "https://i.postimg.cc/nM6qWNZ0/photo-2.jpg",
+      ingredients: ['Гранд Де Люкс', 'Стрипсы (4 шт.)', 'Лимонад Кифас', 'Соус Барбекю', 'Стикерпак "Мото"'] },
+    { id: 3, category: 'faces', title: 'КОМБО БИТ БОКСЕР', desc: 'Нокаут для голода', price: 399, img: "https://i.postimg.cc/yJVmP9B4/photo-3.jpg",
+      ingredients: ['Чикен Бургер', 'Крылья BBQ (8 шт.)', 'Картофель по-деревенски', 'Молочный коктейль', 'Соус Чесночный'] },
+    { id: 4, category: 'faces', title: 'КОМБО МИЩАНЯ', desc: 'Лапочка с сюрпризом', price: 259, img: "https://i.postimg.cc/Q9dqX7nK/photo-4.jpg",
+      ingredients: ['Чизбургер', 'Наггетсы (6 шт.)', 'Чай зеленый', 'Мороженое', 'Соус Кетчуп'] },
+      
+    { id: 5, category: 'burger', title: 'Шефбургер', desc: 'Курица, соус, салат', price: 249, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80' },
+    { id: 6, category: 'burger', title: 'Чизбургер', desc: 'Говядина, сыр, огурцы', price: 189, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=300&q=80' },
+    { id: 7, category: 'burger', title: 'Гранд Де Люкс', desc: 'Двойная котлета, бекон', price: 359, img: 'https://images.unsplash.com/photo-1594212691514-2c7a02f3b509?w=300&q=80' },
+    { id: 8, category: 'burger', title: 'Чикен Бургер', desc: 'Хрустящая курица', price: 199, img: 'https://images.unsplash.com/photo-1615297928064-24977384d0da?w=300&q=80' },
+    { id: 9, category: 'burger', title: 'Гамбургер', desc: 'Классический', price: 149, img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=300&q=80' },
+    { id: 10, category: 'burger', title: 'Фиш Бургер', desc: 'Рыбная котлета', price: 219, img: 'https://images.unsplash.com/photo-1596662951482-0c4ba74a6df6?w=300&q=80' },
+    { id: 11, category: 'burger', title: 'Вегги Бургер', desc: 'Овощная котлета', price: 229, img: 'https://images.unsplash.com/photo-1520072959219-c595dc870360?w=300&q=80' },
+    
+    { id: 12, category: 'chicken', title: 'Крылья Кифас', desc: '8 шт., острые', price: 399, img: 'https://images.unsplash.com/photo-1524114664604-cd8133cd67ad?w=300&q=80' },
+    { id: 13, category: 'chicken', title: 'Стрипсы', desc: '4 шт., нежные', price: 219, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=300&q=80' },
+    { id: 14, category: 'chicken', title: 'Наггетсы', desc: '6 шт.', price: 159, img: 'https://images.unsplash.com/photo-1569004153534-593475c30e5f?w=300&q=80' },
+    { id: 15, category: 'chicken', title: 'Куриная ножка', desc: 'Запеченная', price: 189, img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=300&q=80' },
+    { id: 16, category: 'chicken', title: 'Крылья BBQ', desc: '8 шт., соус барбекю', price: 419, img: 'https://images.unsplash.com/photo-1608039755401-742074f0548d?w=300&q=80' },
+    { id: 17, category: 'chicken', title: 'Куриный шашлык', desc: 'На шпажке', price: 249, img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&q=80' },
+    
+    { id: 18, category: 'pizza', title: 'Пепперони', desc: 'Колбаски, сыр', price: 499, img: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=300&q=80' },
+    { id: 19, category: 'pizza', title: 'Маргарита', desc: 'Томаты, сыр', price: 399, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300&q=80' },
+    { id: 20, category: 'pizza', title: '4 Сыра', desc: 'Моцарелла, чеддер', price: 549, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&q=80' },
+    { id: 21, category: 'pizza', title: 'Мясная', desc: 'Бекон, ветчина', price: 599, img: 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?w=300&q=80' },
+    
+    { id: 22, category: 'rolls', title: 'Филадельфия', desc: 'Лосось, сыр', price: 459, img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&q=80' },
+    { id: 23, category: 'rolls', title: 'Калифорния', desc: 'Краб, авокадо', price: 399, img: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=300&q=80' },
+    { id: 24, category: 'rolls', title: 'Запеченный', desc: 'Угорь, сыр', price: 429, img: 'https://images.unsplash.com/photo-1615361200141-f45040f367be?w=300&q=80' },
+    { id: 25, category: 'rolls', title: 'Овощной', desc: 'Огурец, авокадо', price: 299, img: 'https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&q=80' },
+    
+    { id: 26, category: 'snacks', title: 'Картофель фри', desc: 'Хрустящий (150 г)', price: 129, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300&q=80' },
+    { id: 27, category: 'snacks', title: 'Луковые кольца', desc: '6 шт.', price: 119, img: 'https://images.unsplash.com/photo-1639024471283-03518883512d?w=300&q=80' },
+    { id: 28, category: 'snacks', title: 'Картофель по-деревенски', desc: 'С паприкой', price: 139, img: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?w=300&q=80' },
+    { id: 29, category: 'snacks', title: 'Сырные палочки', desc: '5 шт.', price: 179, img: 'https://images.unsplash.com/photo-1548340748-6d2b7d7da280?w=300&q=80' },
+    { id: 30, category: 'snacks', title: 'Салат Цезарь', desc: 'Курица, сухарики', price: 229, img: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=300&q=80' },
+    
+    { id: 31, category: 'drinks', title: 'Кола', desc: '0.5 л', price: 99, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&q=80' },
+    { id: 32, category: 'drinks', title: 'Сок', desc: 'Апельсиновый, 0.3 л', price: 149, img: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=300&q=80' },
+    { id: 33, category: 'drinks', title: 'Кофе', desc: 'Капучино', price: 119, img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300&q=80' },
+    { id: 34, category: 'drinks', title: 'Лимонад', desc: 'Домашний', price: 129, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=300&q=80' },
+    { id: 35, category: 'drinks', title: 'Чай', desc: 'Зеленый', price: 79, img: 'https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=300&q=80' },
+    { id: 36, category: 'drinks', title: 'Молочный коктейль', desc: 'Ванильный', price: 189, img: 'https://images.unsplash.com/photo-1572490122747-3968b75bb8fc?w=300&q=80' },
+    
+    { id: 37, category: 'desserts', title: 'Мороженое', desc: 'Ванильное', price: 89, img: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=300&q=80' },
+    { id: 38, category: 'desserts', title: 'Чизкейк', desc: 'С ягодами', price: 159, img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=300&q=80' },
+    { id: 39, category: 'desserts', title: 'Пирожок', desc: 'Вишневый', price: 79, img: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=300&q=80' },
+    { id: 40, category: 'desserts', title: 'Маффин', desc: 'Шоколадный', price: 109, img: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=300&q=80' },
+    { id: 41, category: 'desserts', title: 'Донат', desc: 'С глазурью', price: 99, img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=300&q=80' },
+    
+    { id: 42, category: 'sauces', title: 'Сырный', desc: '30 г', price: 39, img: 'https://images.unsplash.com/photo-1589135924247-1d078afbb7bc?w=300&q=80' },
+    { id: 43, category: 'sauces', title: 'Барбекю', desc: '30 г', price: 39, img: 'https://images.unsplash.com/photo-1613278294120-28e5577082d6?w=300&q=80' },
+    { id: 44, category: 'sauces', title: 'Чесночный', desc: '30 г', price: 39, img: 'https://images.unsplash.com/photo-1577906096429-f73c2c312435?w=300&q=80' },
+    { id: 45, category: 'sauces', title: 'Кетчуп', desc: '30 г', price: 29, img: 'https://images.unsplash.com/photo-1601098408486-6a17cddf5965?w=300&q=80' }
+  ];
+
+  const initialTasks = [
+    { id: 1, title: 'Новичок', desc: 'Купи любые 2 блюда', reward: 200, reqType: 'items', reqCount: 2 },
+    { id: 2, title: 'Бургеромания', desc: 'Купи 3 бургера', reward: 400, reqType: 'burger', reqCount: 3 },
+    { id: 3, title: 'Куриный рай', desc: 'Купи 2 блюда из курицы', reward: 350, reqType: 'chicken', reqCount: 2 },
+    { id: 4, title: 'Пиццерия', desc: 'Купи 2 пиццы', reward: 500, reqType: 'pizza', reqCount: 2 },
+    { id: 5, title: 'Суши-мастер', desc: 'Купи 3 ролла', reward: 450, reqType: 'rolls', reqCount: 3 },
+    { id: 6, title: 'Закусочная', desc: 'Купи 3 закуски', reward: 300, reqType: 'snacks', reqCount: 3 },
+    { id: 7, title: 'Жажда', desc: 'Купи 3 напитка', reward: 250, reqType: 'drinks', reqCount: 3 },
+    { id: 8, title: 'Сладкоежка', desc: 'Купи 2 десерта', reward: 300, reqType: 'desserts', reqCount: 2 },
+    { id: 9, title: 'Соусник', desc: 'Купи 4 соуса', reward: 200, reqType: 'sauces', reqCount: 4 },
+    { id: 10, title: 'Тусовщик', desc: 'Купи 1 комбо с другом', reward: 500, reqType: 'faces', reqCount: 1 },
+    { id: 11, title: 'Крупный заказ', desc: 'Сделай заказ на 1500 ₽', reward: 600, reqType: 'sum', reqCount: 1500 },
+    { id: 12, title: 'Мега-заказ', desc: 'Сделай заказ на 3000 ₽', reward: 1200, reqType: 'sum', reqCount: 3000 },
+    { id: 13, title: 'Оптовик', desc: 'Купи 10 блюд', reward: 800, reqType: 'items', reqCount: 10 },
+    { id: 14, title: 'Гурман', desc: 'Купи по 1 шт. из 5 разных категорий', reward: 1000, reqType: 'variety', reqCount: 5 },
+    { id: 15, title: 'Пицца-мания', desc: 'Купи 4 пиццы', reward: 900, reqType: 'pizza', reqCount: 4 }
+  ];
+
+  const state = {
+    cart: JSON.parse(storage.getItem('kifas_cart') || '[]'),
+    bonuses: parseInt(storage.getItem('kifas_bonuses') || '0', 10),
+    bankBalance: parseInt(storage.getItem('kifas_bank_balance') || '2500', 10),
+    walletBalance: parseInt(storage.getItem('kifas_wallet') || '0', 10),
+    bankHistory: JSON.parse(storage.getItem('kifas_bank_history') || '[]'),
+    tasks: JSON.parse(storage.getItem('kifas_tasks') || JSON.stringify(initialTasks.map(t => ({ ...t, progress: 0, claimed: false }))))
+  };
+
+  if (state.bankHistory.length === 0) {
+    state.bankHistory.push({ desc: 'Приветственный бонус', amount: 2500, time: 'Сейчас' });
+  }
+
+  const menuGrid = document.getElementById('menuGrid');
+  const tasksList = document.getElementById('tasksList');
+  const menuContainer = document.getElementById('menuContainer');
+  const tasksContainer = document.getElementById('tasksContainer');
+  const floatingCart = document.getElementById('floatingCart');
+  const cartPanel = document.getElementById('cartPanel');
+  const cartCount = document.getElementById('cartCount');
+  const cartTotal = document.getElementById('cartTotal');
+  const cartTotalPanel = document.getElementById('cartTotalPanel');
+  const cartItemsList = document.getElementById('cartItemsList');
+  const bonusCount = document.getElementById('bonusCount');
+  const toast = document.getElementById('toast');
+  const choiceModal = document.getElementById('choiceModal');
+  const streetScene = document.getElementById('streetScene');
+  const tableScene = document.getElementById('tableScene');
+  const eatingOverlay = document.getElementById('eatingOverlay');
+  const bankPush = document.getElementById('bankPush');
+  const pushText = document.getElementById('pushText');
+  const pushBalance = document.getElementById('pushBalance');
+  
+  const comboModal = document.getElementById('comboModal');
+  const comboTitle = document.getElementById('comboTitle');
+  const comboPrice = document.getElementById('comboPrice');
+  const comboList = document.getElementById('comboList');
+  let currentComboId = null;
+
+  function init() {
+    filterMenu('all'); 
+    renderTasks();
+    updateCartUI();
+    updateBankUI();
+    bonusCount.textContent = state.bonuses;
+  }
+
+  window.switchTab = function(tab, category, btnElement) {
+    document.querySelectorAll('.categories > .cat-btn').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+
+    if (tab === 'menu') {
+      menuContainer.style.display = 'block';
+      tasksContainer.style.display = 'none';
+      if (category) filterMenu(category);
+    } else {
+      menuContainer.style.display = 'none';
+      tasksContainer.style.display = 'block';
+      renderTasks();
+    }
+  };
+
+  function renderTasks() {
+    tasksList.innerHTML = '';
+    state.tasks.forEach(task => {
+      let isDone = task.progress >= task.reqCount;
+      let btnClass = 'progress';
+      let btnText = `${task.progress} / ${task.reqCount}`;
+      
+      if (task.claimed) { btnClass = 'done'; btnText = 'Получено'; }
+      else if (isDone) { btnClass = 'claim'; btnText = 'Забрать'; }
+
+      const el = document.createElement('div');
+      el.className = 'task-card';
+      el.innerHTML = `
+        <div class="task-info">
+          <h4>${task.title}</h4>
+          <p>${task.desc}</p>
+          <div class="task-reward">+${task.reward} ₽</div>
+        </div>
+        <button class="task-btn ${btnClass}" onclick="claimTask(${task.id})" ${(!isDone || task.claimed) ? 'disabled' : ''}>
+          ${btnText}
+        </button>
+      `;
+      tasksList.appendChild(el);
+    });
+  }
+
+  window.claimTask = function(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task || task.progress < task.reqCount || task.claimed) return;
+
+    task.claimed = true;
+    state.walletBalance += task.reward;
+    saveData();
+    renderTasks();
+    updateBankUI();
+    showToast(`Задание выполнено! +${task.reward} ₽ в кошелек`, '#4caf50');
+  };
+
+  function updateTaskProgress(cartItems) {
+    const totalItems = cartItems.reduce((s, i) => s + i.qty, 0);
+    const uniqueCategories = new Set(cartItems.map(i => i.category)).size;
+    const counts = { burger: 0, chicken: 0, snacks: 0, drinks: 0, desserts: 0, sauces: 0, faces: 0, pizza: 0, rolls: 0 };
+    
+    cartItems.forEach(i => { if (counts[i.category] !== undefined) counts[i.category] += i.qty; });
+    const totalSum = cartItems.reduce((s, i) => s + (i.price * i.qty), 0);
+
+    state.tasks.forEach(task => {
+      if (task.claimed) return;
+      if (task.reqType === 'items') task.progress = Math.min(task.reqCount, totalItems);
+      else if (task.reqType === 'sum') task.progress = Math.min(task.reqCount, totalSum);
+      else if (task.reqType === 'variety') task.progress = Math.min(task.reqCount, uniqueCategories);
+      else if (counts[task.reqType] !== undefined) task.progress = Math.min(task.reqCount, counts[task.reqType]);
+    });
+    saveData();
+    renderTasks();
+  }
+
+  window.openBank = function() { updateBankUI(); document.getElementById('bankModal').classList.add('active'); };
+  window.closeBank = function() { document.getElementById('bankModal').classList.remove('active'); };
+  window.closeBankOnOverlay = function(e) { if (e.target.id === 'bankModal') closeBank(); };
+
+  window.transferToBank = function() {
+    if (state.walletBalance <= 0) { showToast('В кошельке нет денег для перевода!', '#f44336'); return; }
+    const amountToTransfer = state.walletBalance;
+    state.bankBalance += amountToTransfer;
+    state.walletBalance = 0;
+    addBankHistory('Перевод с кошелька', amountToTransfer, false);
+    saveData();
+    updateBankUI();
+    showToast(`Успешно переведено ${amountToTransfer} ₽`, '#1976d2');
+  };
+
+  function addBankHistory(desc, amount, isExpense) {
+    const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    state.bankHistory.unshift({ desc, amount: isExpense ? -amount : amount, time });
+    if (state.bankHistory.length > 20) state.bankHistory.pop();
+    saveData();
+  }
+
+  function updateBankUI() {
+    document.getElementById('bankBalanceDisplay').textContent = state.bankBalance.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('walletBalanceDisplay').textContent = state.walletBalance.toLocaleString('ru-RU') + ' ₽';
+    
+    const historyEl = document.getElementById('bankHistory');
+    historyEl.innerHTML = '';
+    state.bankHistory.forEach(tx => {
+      const el = document.createElement('div');
+      el.className = 'bank-tx-item';
+      el.innerHTML = `
+        <div>
+          <div style="font-weight:600;">${tx.desc}</div>
+          <div style="font-size:11px; color:#757575;">${tx.time}</div>
+        </div>
+        <div style="font-weight:800; color: ${tx.amount > 0 ? '#4caf50' : '#212121'};">
+          ${tx.amount > 0 ? '+' : ''}${tx.amount} ₽
+        </div>
+      `;
+      historyEl.appendChild(el);
+    });
+  }
+
+  window.filterMenu = function(category, btnElement) {
+    if (btnElement) {
+      const buttons = document.querySelectorAll('#menuContainer .cat-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+    }
+
+    let filteredData = menuData;
+    if (category !== 'all') filteredData = menuData.filter(item => item.category === category);
+
+    menuGrid.innerHTML = '';
+    filteredData.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'product-card';
+      
+      // Делаем карточку кликабельной для комбо
+      const isCombo = item.category === 'faces';
+      const clickAction = isCombo ? `onclick="openCombo(${item.id})"` : '';
+      
+      let imgHtml = `
+        <img src="${item.img}" alt="${item.title}" 
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <span class="fallback-icon" style="display:none;">📸</span>
+      `;
+
+      el.innerHTML = `
+        <div ${clickAction} style="cursor:pointer; display:flex; flex-direction:column; flex:1;">
+          <div class="product-img">${imgHtml}</div>
+          <div class="product-title">${item.title}</div>
+          <div class="product-desc">${item.desc}</div>
+        </div>
+        <div class="product-bottom">
+          <div class="product-price">${item.price} ₽</div>
+          <button class="add-btn" onclick="addToCart(${item.id})">+</button>
+        </div>
+      `;
+      menuGrid.appendChild(el);
+    });
+  }
+
+  // === ЛОГИКА ОКНА СОСТАВА КОМБО ===
+  window.openCombo = function(id) {
+    const item = menuData.find(m => m.id === id);
+    if (!item || !item.ingredients) return;
+    
+    currentComboId = id;
+    comboTitle.textContent = item.title;
+    comboPrice.textContent = item.price + ' ₽';
+    
+    comboList.innerHTML = '';
+    item.ingredients.forEach(ing => {
+      const li = document.createElement('li');
+      li.textContent = ing;
+      comboList.appendChild(li);
+    });
+
+    comboModal.classList.add('active');
+    playClickSound();
+  };
+
+  window.closeCombo = function() {
+    comboModal.classList.remove('active');
+    currentComboId = null;
+  };
+
+  window.addComboToCart = function() {
+    if (currentComboId) {
+      addToCart(currentComboId);
+      closeCombo();
+    }
+  };
+
+  // Закрытие окна комбо по клику на фон
+  comboModal.addEventListener('click', (e) => {
+    if (e.target === comboModal) closeCombo();
+  });
+
+
+  window.addToCart = function(id) {
+    const item = menuData.find(m => m.id === id);
+    const existing = state.cart.find(c => c.id === id);
+    if (existing) existing.qty++;
+    else state.cart.push({ ...item, qty: 1 });
+    
+    saveData();
+    updateCartUI();
+    showToast('Добавлено в корзину!');
+  };
+
+  window.changeQty = function(id, delta) {
+    const item = state.cart.find(c => c.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) state.cart = state.cart.filter(c => c.id !== id);
+    saveData();
+    updateCartUI();
+  };
+
+  function updateCartUI() {
+    const totalItems = state.cart.reduce((sum, item) => sum + item.qty, 0);
+    const totalPrice = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    cartCount.textContent = totalItems;
+    cartTotal.textContent = totalPrice;
+    cartTotalPanel.textContent = totalPrice;
+
+    if (totalItems > 0) floatingCart.classList.add('active');
+    else {
+      floatingCart.classList.remove('active');
+      cartPanel.classList.remove('active');
+    }
+
+    cartItemsList.innerHTML = '';
+    state.cart.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'cart-item';
+      el.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-weight:600;">${item.title}</div>
+          <div style="font-size:12px; color:var(--text-muted);">${item.price} ₽</div>
+        </div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+          <span style="font-weight:bold; width:20px; text-align:center;">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+        </div>
+        <div style="font-weight:bold; width:60px; text-align:right;">${item.price * item.qty} ₽</div>
+      `;
+      cartItemsList.appendChild(el);
+    });
+  }
+
+  window.toggleCart = function() { cartPanel.classList.toggle('active'); };
+
+  window.showChoice = function() {
+    const totalPrice = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    if (totalPrice > state.bankBalance) {
+      showToast('Недостаточно средств на карте КИФАС.РУ Банка!', '#f44336');
+      return;
+    }
+    if (state.cart.length === 0) return;
+    choiceModal.classList.add('active');
+  };
+
+  window.processCheckout = function(sceneType) {
+    choiceModal.classList.remove('active');
+    cartPanel.classList.remove('active');
+    
+    const totalPrice = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const oldBalance = state.bankBalance;
+    
+    state.bankBalance -= totalPrice;
+    addBankHistory('Оплата заказа', totalPrice, true);
+
+    state.bonuses += Math.floor(totalPrice * 0.1);
+    bonusCount.textContent = state.bonuses;
+
+    updateTaskProgress(state.cart);
+
+    const receiptHtml = state.cart.map(item => `
+      <div><span>${item.title} x${item.qty}</span> <span>${item.price * item.qty} ₽</span></div>
+    `).join('');
+
+    state.cart = [];
+    saveData();
+    updateCartUI();
+    updateBankUI();
+    
+    showBankPush(totalPrice, oldBalance, state.bankBalance);
+
+    if (sceneType === 'takeaway') {
+      document.getElementById('streetReceiptItems').innerHTML = receiptHtml;
+      streetScene.classList.add('active');
+    } else {
+      document.getElementById('tableReceiptItems').innerHTML = receiptHtml;
+      tableScene.classList.add('active');
+    }
+  };
+
+  window.eatFood = function() {
+    eatingOverlay.classList.add('active');
+    setTimeout(() => {
+      eatingOverlay.classList.remove('active');
+      returnToMenu();
+      showToast('Приятного аппетита! 😋', '#4caf50');
+    }, 2500);
+  };
+
+  window.returnToMenu = function() {
+    streetScene.classList.remove('active');
+    tableScene.classList.remove('active');
+  };
+
+  function showBankPush(spent, oldBal, newBal) {
+    pushText.innerHTML = `Списание средств <b>${spent} ₽</b>`;
+    pushBalance.textContent = `Итого на балансе: ${newBal.toLocaleString('ru-RU')} ₽`;
+    bankPush.classList.add('show');
+    setTimeout(() => { bankPush.classList.remove('show'); }, 4000);
+  }
+
+  function saveData() {
+    storage.setItem('kifas_cart', JSON.stringify(state.cart));
+    storage.setItem('kifas_bonuses', state.bonuses);
+    storage.setItem('kifas_bank_balance', state.bankBalance);
+    storage.setItem('kifas_wallet', state.walletBalance);
+    storage.setItem('kifas_bank_history', JSON.stringify(state.bankHistory));
+    storage.setItem('kifas_tasks', JSON.stringify(state.tasks));
+  }
+
+  let toastTimeout;
+  function showToast(msg, color = '#4caf50') {
+    toast.textContent = msg;
+    toast.style.background = color;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  init();
+</script>
+</body>
+</html>
