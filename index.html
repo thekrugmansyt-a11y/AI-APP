@@ -1,0 +1,895 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Верховный Суд</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* --- ГЛАВНЫЙ ЭКРАН --- */
+  #introScreen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    z-index: 100; transition: opacity 0.5s;
+  }
+  
+  .emblem { font-size: 80px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2)); }
+  .intro-title { font-family: 'Playfair Display', serif; font-size: 32px; color: #fff; margin-bottom: 10px; }
+  .intro-sub { color: #94a3b8; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
+  
+  .btn-enter {
+    background: #f8fafc; color: #0f172a; border: none;
+    padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+  }
+  .btn-enter:hover { background: #cbd5e1; transform: translateY(-2px); }
+  .btn-enter:active { transform: translateY(0); }
+
+  /* --- ЭКРАН СУДА --- */
+  #courtScreen {
+    display: flex; flex-direction: column; height: 100%;
+    max-width: 800px; margin: 0 auto; width: 100%; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+  }
+
+  .top-bar {
+    display: flex; justify-content: space-between; font-size: 12px;
+    color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 20px;
+  }
+
+  .judge-area { display: flex; justify-content: center; margin-bottom: 20px; }
+  .judge-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .judge-card.active { opacity: 1; }
+  .judge-card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
+  .judge-card.active img { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+  .judge-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .defendants-area { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 0 20px; }
+  .char-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .char-card.active { opacity: 1; }
+  .char-card img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; }
+  .char-card.pashka.active img { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+  .char-card.dishka.active img { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+  .char-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .dialog-box {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .dialog-speaker { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .dialog-text { font-size: 16px; line-height: 1.6; color: #e2e8f0; }
+
+  .btn-next {
+    align-self: flex-end; background: #334155; color: #fff; border: none;
+    padding: 12px 30px; border-radius: 6px; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 20px; opacity: 0; pointer-events: none; transition: 0.2s;
+  }
+  .btn-next.show { opacity: 1; pointer-events: auto; }
+  .btn-next:hover { background: #475569; }
+
+  /* --- ЭКРАН ТАЙМЕРА --- */
+  #timerScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 150; opacity: 0; pointer-events: none; transition: opacity 1s;
+  }
+  #timerScreen.active { opacity: 1; pointer-events: auto; }
+  
+  .timer-text { color: #94a3b8; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; }
+  .timer-number { font-family: 'Playfair Display', serif; font-size: 80px; color: #fff; font-weight: 700; }
+
+  /* --- ЭКРАН ВЕРДИКТА СУДЬИ --- */
+  #judgeVerdictScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 160; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    padding: 20px; text-align: center;
+  }
+  #judgeVerdictScreen.active { opacity: 1; pointer-events: auto; }
+
+  .judge-verdict-avatar {
+    width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #38bdf8; margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+  }
+  .judge-verdict-name { font-family: 'Playfair Display', serif; font-size: 24px; color: #fff; margin-bottom: 15px; }
+  .judge-verdict-text { font-size: 18px; line-height: 1.6; color: #cbd5e1; max-width: 600px; margin-bottom: 30px; }
+  
+  /* --- БУМАГА --- */
+  #verdictPaperScreen {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.5s; padding: 20px;
+    overflow-y: auto;
+  }
+  #verdictPaperScreen.active { opacity: 1; pointer-events: auto; }
+
+  .paper {
+    background: #fff; color: #111; width: 100%; max-width: 500px;
+    padding: 40px; border-radius: 4px; font-family: 'Playfair Display', serif;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: translateY(30px) scale(0.95); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; margin: auto;
+  }
+  #verdictPaperScreen.active .paper { transform: translateY(0) scale(1); }
+
+  .paper h2 { text-align: center; font-size: 20px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+  .paper p { font-size: 15px; line-height: 1.7; margin-bottom: 15px; text-align: justify; }
+  .paper strong { color: #b91c1c; }
+
+  .signature-area {
+    margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px dashed #ccc; padding-top: 20px;
+  }
+  .signature-line { font-family: 'Inter', sans-serif; font-size: 12px; color: #666; }
+  
+  .btn-sign {
+    background: #0f172a; color: #fff; border: none; padding: 12px 30px;
+    border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: 0.2s;
+  }
+  .btn-sign:hover { background: #1e293b; }
+  
+  .stamp {
+    position: absolute; bottom: 20px; right: 20px;
+    border: 3px solid #b91c1c; color: #b91c1c; padding: 5px 15px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 18px;
+    transform: rotate(-10deg); opacity: 0; transition: 0.3s; pointer-events: none;
+  }
+  .stamp.show { opacity: 0.8; animation: stampAnim 0.3s ease-out; }
+  @keyframes stampAnim { 0% { transform: scale(2) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-10deg); opacity: 0.8; } }
+
+</style>
+</head>
+<body>
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <div id="introScreen">
+    <div class="emblem">⚖️</div>
+    <h1 class="intro-title">Верховный Суд</h1>
+    <p class="intro-sub">Дело о расторжении брака № 2026-КФС</p>
+    <button class="btn-enter" onclick="startCourt()">Войти в зал суда</button>
+  </div>
+
+  <!-- ЭКРАН СУДА -->
+  <div id="courtScreen">
+    <div class="top-bar">
+      <span>СУДЕБНОЕ ЗАСЕДАНИЕ</span>
+      <span>ДЕЛО № 2026-КФС</span>
+    </div>
+
+    <div class="judge-area">
+      <div class="judge-card" id="judgeCard">
+        <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" onerror="this.src='https://via.placeholder.com/80/1e293b/fff?text=СУДЬЯ'">
+        <div class="judge-name">Судья Skipper</div>
+      </div>
+    </div>
+
+    <div class="defendants-area">
+      <div class="char-card pashka" id="pashkaCard">
+        <img src="https://i.postimg.cc/sBw96RYR/pashka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=П'">
+        <div class="char-name">Пашка</div>
+      </div>
+      <div class="char-card dishka" id="dishkaCard">
+        <img src="https://i.postimg.cc/JHyqHdH9/dishka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=Д'">
+        <div class="char-name">Дишка</div>
+      </div>
+    </div>
+
+    <div class="dialog-box">
+      <div>
+        <div class="dialog-speaker" id="speakerName"></div>
+        <div class="dialog-text" id="textContent"></div>
+      </div>
+      <button class="btn-next" id="nextBtn" onclick="nextStep()">Далее</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ТАЙМЕРА -->
+  <div id="timerScreen">
+    <div class="timer-text">Суд удалился на совещание</div>
+    <div class="timer-number" id="timerNumber">10</div>
+  </div>
+
+  <!-- ЭКРАН ВЕРДИКТА СУДЬИ -->
+  <div id="judgeVerdictScreen">
+    <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" class="judge-verdict-avatar" onerror="this.src='https://via.placeholder.com/120/000/fff?text=СУДЬЯ'">
+    <div class="judge-verdict-name">Судья Skipper</div>
+    <div class="judge-verdict-text" id="judgeVerdictText"></div>
+    <button class="btn-next show" style="position:static; margin-top:20px; opacity:1;" onclick="showPaper()">Огласить приговор</button>
+  </div>
+
+  <!-- БУМАГА -->
+  <div id="verdictPaperScreen">
+    <div class="paper">
+      <h2>Судебное решение</h2>
+      <p>Именем Российской Федерации, суд в составе председательствующего судьи <strong>Skipper</strong>, рассмотрев дело № 2026-КФС, постановил:</p>
+      <p>1. Брак между Пашкой и Дишкой расторгнуть.</p>
+      <p>2. Всё совместно нажитое имущество, включая квартиру, автомобиль и право на заказ в КИФАС.РУ, передать в собственность <strong>Пашке</strong>.</p>
+      <p>3. Ответчице Дишке в удовлетворении требований отказать.</p>
+      
+      <div class="signature-area">
+        <div>
+          <div class="signature-line">Судья _________________</div>
+          <div class="signature-line" style="margin-top:10px;">Дата: 20.10.2026</div>
+        </div>
+        <button class="btn-sign" onclick="signDocument()">Подписать</button>
+      </div>
+
+      <div class="stamp" id="stamp">УТВЕРЖДЕНО</div>
+    </div>
+  </div>
+
+<script>
+  // === РЕПЛИКИ (10 Пашка, 10 Дишка, 10 Судья) ===
+  const script = [
+    { id: 'judge', name: 'Судья Skipper', text: 'Заседание объявляется открытым. Слушается дело о расторжении брака между Пашкой и Дишкой.' },
+    
+    // 1
+    { id: 'pashka', name: 'Пашка', text: 'Ваша честь, я требую развода! Она съела мой заказ из КИФАС.РУ, пока я играл!' },
+    { id: 'dishka', name: 'Дишка', text: 'Это наглая ложь! Ты сам сказал, что не голоден, а я просто не хотела выбрасывать еду!' },
+    { id: 'judge', name: 'Судья Skipper', text: 'В деле имеется чек на сумму 3999 рублей. Что вы можете сказать по этому поводу?' },
+
+    // 2
+    { id: 'pashka', name: 'Пашка', text: 'Она даже соус не оставила! Я требую полной компенсации морального вреда.' },
+    { id: 'dishka', name: 'Дишка', text: 'А кто мне готовил завтраки последние три года? Я требую раздел имущества 50 на 50!' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Суд изучил материалы дела. Имущество было нажито в браке, но есть нюансы.' },
+
+    // 3
+    { id: 'pashka', name: 'Пашка', text: 'Квартира куплена на мои деньги. Я требую оставить её себе!' },
+    { id: 'dishka', name: 'Дишка', text: 'А как же мой вклад в ремонт и уют? Я не согласна с этим!' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Суд принимает во внимание все обстоятельства. Есть ли у сторон еще что-то добавить?' },
+
+    // 4
+    { id: 'pashka', name: 'Пашка', text: 'Да, я хочу оставить себе машину. Она мне нужна для работы.' },
+    { id: 'dishka', name: 'Дишка', text: 'Тогда я требую оставить мне кота! И телевизор!' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Суд удаляется на вынесение окончательного решения. Ожидайте.' },
+
+    // 5
+    { id: 'pashka', name: 'Пашка', text: 'Справедливость должна восторжествовать!' },
+    { id: 'dishka', name: 'Дишка', text: 'Посмотрим, что решит суд.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Заседание продолжается. Суд готов огласить приговор.' },
+
+    // 6
+    { id: 'pashka', name: 'Пашка', text: 'Я весь внимание.' },
+    { id: 'dishka', name: 'Дишка', text: 'И я.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Внимание! Суд удаляется для принятия окончательного решения.' },
+
+    // 7
+    { id: 'pashka', name: 'Пашка', text: 'Ну наконец-то.' },
+    { id: 'dishka', name: 'Дишка', text: 'Скорее бы это закончилось.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Решение будет оглашено немедленно.' },
+
+    // 8
+    { id: 'pashka', name: 'Пашка', text: 'Я жду.' },
+    { id: 'dishka', name: 'Дишка', text: 'И я жду.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Суд готов.' },
+
+    // 9
+    { id: 'pashka', name: 'Пашка', text: 'Пусть справедливость восторжествует!' },
+    { id: 'dishka', name: 'Дишка', text: 'Посмотрим.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Всё, хватит. Суд удаляется.' },
+
+    // 10
+    { id: 'pashka', name: 'Пашка', text: 'Хорошо.' },
+    { id: 'dishka', name: 'Дишка', text: 'Наконец-то.' },
+    { id: 'judge', name: 'Судья Skipper', text: 'Заседание прерывается для вынесения приговора.' }
+  ];
+
+  let currentStep = 0;
+  let timerInterval;
+
+  function startCourt() {
+    document.getElementById('introScreen').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('introScreen').style.display = 'none';
+      document.getElementById('courtScreen').style.opacity = '1';
+      document.getElementById('courtScreen').style.pointerEvents = 'auto';
+      renderStep();
+    }, 500);
+  }
+
+  function renderStep() {
+    if (currentStep >= script.length) {
+      // Конец реплик — запускаем таймер
+      document.getElementById('courtScreen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('courtScreen').style.display = 'none';
+        document.getElementById('timerScreen').classList.add('active');
+        startTimer();
+      }, 500);
+      return;
+    }
+
+    const step = script[currentStep];
+
+    // Сброс
+    document.getElementById('judgeCard').classList.remove('active');
+    document.getElementById('pashkaCard').classList.remove('active');
+    document.getElementById('dishkaCard').classList.remove('active');
+    document.getElementById('nextBtn').classList.remove('show');
+
+    // Установка активного
+    const speakerEl = document.getElementById('speakerName');
+    if (step.id === 'judge') {
+      document.getElementById('judgeCard').classList.add('active');
+      speakerEl.style.color = '#38bdf8';
+    } else if (step.id === 'pashka') {
+      document.getElementById('pashkaCard').classList.add('active');
+      speakerEl.style.color = '#3b82f6';
+    } else if (step.id === 'dishka') {
+      document.getElementById('dishkaCard').classList.add('active');
+      speakerEl.style.color = '#ef4444';
+    }
+
+    speakerEl.innerText = step.name;
+    typeText(step.text);
+  }
+
+  function typeText(text) {
+    const el = document.getElementById('textContent');
+    el.innerHTML = '';
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        el.innerHTML += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+        document.getElementById('nextBtn').classList.add('show');
+        if (currentStep === script.length - 1) {
+          document.getElementById('nextBtn').innerText = 'Завершить заседание';
+        } else {
+          document.getElementById('nextBtn').innerText = 'Далее';
+        }
+      }
+    }, 20);
+  }
+
+  function nextStep() {
+    currentStep++;
+    renderStep();
+  }
+
+  // === ТАЙМЕР ===
+  function startTimer() {
+    let timeLeft = 10;
+    const timerEl = document.getElementById('timerNumber');
+    timerEl.innerText = timeLeft;
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerEl.innerText = timeLeft;
+      
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        showJudgeVerdict();
+      }
+    }, 1000);
+  }
+
+  // === ВЕРДИКТ СУДЬИ ===
+  function showJudgeVerdict() {
+    document.getElementById('timerScreen').classList.remove('active');
+    document.getElementById('judgeVerdictScreen').classList.add('active');
+    
+    const text = 'Выслушав доводы сторон и изучив все материалы дела, суд постановил: всё имущество переходит Пашке. Дишка, вы свободны.';
+    const el = document.getElementById('judgeVerdictText');
+    el.innerHTML = '';
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        el.innerHTML += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 30);
+  }
+
+  // === БУМАГА ===
+  function showPaper() {
+    document.getElementById('judgeVerdictScreen').classList.remove('active');
+    document.getElementById('verdictPaperScreen').classList.add('active');
+  }
+
+  function signDocument() {
+    document.getElementById('stamp').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('verdictPaperScreen').innerHTML = `
+        <div style="color:#fff; font-family:'Playfair Display', serif; text-align:center; font-size:24px; padding: 20px;">
+          Документ подписан.<br>
+          <span style="font-size:16px; color:#94a3b8; margin-top:10px; display:block;">Заседание окончено.</span>
+        </div>
+      `;
+    }, 1500);
+  }
+</script>
+</body>
+</html><script><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Верховный Суд</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* --- ГЛАВНЫЙ ЭКРАН --- */
+  #introScreen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    z-index: 100; transition: opacity 0.5s;
+  }
+  
+  .emblem { font-size: 80px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2)); }
+  .intro-title { font-family: 'Playfair Display', serif; font-size: 32px; color: #fff; margin-bottom: 10px; }
+  .intro-sub { color: #94a3b8; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
+  
+  .btn-enter {
+    background: #f8fafc; color: #0f172a; border: none;
+    padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+  }
+  .btn-enter:hover { background: #cbd5e1; transform: translateY(-2px); }
+  .btn-enter:active { transform: translateY(0); }
+
+  /* --- ЭКРАН СУДА --- */
+  #courtScreen {
+    display: flex; flex-direction: column; height: 100%;
+    max-width: 800px; margin: 0 auto; width: 100%; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+  }
+
+  .top-bar {
+    display: flex; justify-content: space-between; font-size: 12px;
+    color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 20px;
+  }
+
+  .judge-area { display: flex; justify-content: center; margin-bottom: 20px; }
+  .judge-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .judge-card.active { opacity: 1; }
+  .judge-card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
+  .judge-card.active img { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+  .judge-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .defendants-area { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 0 20px; }
+  .char-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .char-card.active { opacity: 1; }
+  .char-card img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; }
+  .char-card.pashka.active img { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+  .char-card.dishka.active img { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+  .char-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .dialog-box {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .dialog-speaker { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .dialog-text { font-size: 16px; line-height: 1.6; color: #e2e8f0; }
+
+  .btn-next {
+    align-self: flex-end; background: #334155; color: #fff; border: none;
+    padding: 12px 30px; border-radius: 6px; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 20px; opacity: 0; pointer-events: none; transition: 0.2s;
+  }
+  .btn-next.show { opacity: 1; pointer-events: auto; }
+  .btn-next:hover { background: #475569; }
+
+  /* --- ЭКРАН ТАЙМЕРА --- */
+  #timerScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 150; opacity: 0; pointer-events: none; transition: opacity 1s;
+  }
+  #timerScreen.active { opacity: 1; pointer-events: auto; }
+  
+  .timer-text { color: #94a3b8; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; }
+  .timer-number { font-family: 'Playfair Display', serif; font-size: 80px; color: #fff; font-weight: 700; }
+
+  /* --- ЭКРАН ВЕРДИКТА СУДЬИ --- */
+  #judgeVerdictScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 160; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    padding: 20px; text-align: center;
+  }
+  #judgeVerdictScreen.active { opacity: 1; pointer-events: auto; }
+
+  .judge-verdict-avatar {
+    width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #38bdf8; margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+  }
+  .judge-verdict-name { font-family: 'Playfair Display', serif; font-size: 24px; color: #fff; margin-bottom: 15px; }
+  .judge-verdict-text { font-size: 18px; line-height: 1.6; color: #cbd5e1; max-width: 600px; margin-bottom: 30px; }
+  
+  /* --- БУМАГА --- */
+  #verdictPaperScreen {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.5s; padding: 20px;
+    overflow-y: auto;
+  }
+  #verdictPaperScreen.active { opacity: 1; pointer-events: auto; }
+
+  .paper {
+    background: #fff; color: #111; width: 100%; max-width: 500px;
+    padding: 40px; border-radius: 4px; font-family: 'Playfair Display', serif;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: translateY(30px) scale(0.95); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; margin: auto;
+  }
+  #verdictPaperScreen.active .paper { transform: translateY(0) scale(1); }
+
+  .paper h2 { text-align: center; font-size: 20px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+  .paper p { font-size: 15px; line-height: 1.7; margin-bottom: 15px; text-align: justify; }
+  .paper strong { color: #b91c1c; }
+
+  .signature-area {
+    margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px dashed #ccc; padding-top: 20px;
+  }
+  .signature-line { font-family: 'Inter', sans-serif; font-size: 12px; color: #666; }
+  
+  .btn-sign {
+    background: #0f172a; color: #fff; border: none; padding: 12px 30px;
+    border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: 0.2s;
+  }
+  .btn-sign:hover { background: #1e293b; }
+  
+  .stamp {
+    position: absolute; bottom: 20px; right: 20px;
+    border: 3px solid #b91c1c; color: #b91c1c; padding: 5px 15px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 18px;
+    transform: rotate(-10deg); opacity: 0; transition: 0.3s; pointer-events: none;
+  }
+  .stamp.show { opacity: 0.8; animation: stampAnim 0.3s ease-out; }
+  @keyframes stampAnim { 0% { transform: scale(2) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-10deg); opacity: 0.8; } }
+</style>
+</head>
+<body>
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <div id="introScreen">
+    <div class="emblem">⚖️</div>
+    <h1 class="intro-title">Верховный Суд</h1>
+    <p class="intro-sub">Дело о расторжении брака № 2026-КФС</p>
+    <button class="btn-enter" onclick="startCourt()">Войти в зал суда</button>
+  </div>
+
+  <!-- ЭКРАН СУДА -->
+  <div id="courtScreen">
+    <div class="top-bar">
+      <span>СУДЕБНОЕ ЗАСЕДАНИЕ</span>
+      <span>ДЕЛО № 2026-КФС</span>
+    </div>
+
+    <div class="judge-area">
+      <div class="judge-card" id="judgeCard">
+        <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" onerror="this.src='https://via.placeholder.com/80/1e293b/fff?text=СУДЬЯ'">
+        <div class="judge-name">Судья Skipper</div>
+      </div>
+    </div>
+
+    <div class="defendants-area">
+      <div class="char-card pashka" id="pashkaCard">
+        <img src="https://i.postimg.cc/sBw96RYR/pashka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=П'">
+        <div class="char-name">Пашка</div>
+      </div>
+      <div class="char-card dishka" id="dishkaCard">
+        <img src="https://i.postimg.cc/JHyqHdH9/dishka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=Д'">
+        <div class="char-name">Дишка</div>
+      </div>
+    </div>
+
+    <div class="dialog-box">
+      <div>
+        <div class="dialog-speaker" id="speakerName"></div>
+        <div class="dialog-text" id="textContent"></div>
+      </div>
+      <button class="btn-next" id="nextBtn" onclick="nextStep()">Далее</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ТАЙМЕРА -->
+  <div id="timerScreen">
+    <div class="timer-text">Суд удалился на совещание</div>
+    <div class="timer-number" id="timerNumber">10</div>
+  </div>
+
+  <!-- ЭКРАН ВЕРДИКТА СУДЬИ -->
+  <div id="judgeVerdictScreen">
+    <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" class="judge-verdict-avatar" onerror="this.src='https://via.placeholder.com/120/000/fff?text=СУДЬЯ'">
+    <div class="judge-verdict-name">Судья Skipper</div>
+    <div class="judge-verdict-text" id="judgeVerdictText"></div>
+    <button class="btn-next show" style="position:static; margin-top:20px; opacity:1;" onclick="showPaper()">Огласить приговор</button>
+  </div>
+
+  <!-- БУМАГА -->
+  <div id="verdictPaperScreen">
+    <div class="paper">
+      <h2>Судебное решение</h2>
+      <p>Именем Российской Федерации, суд в составе председательствующего судьи <strong>Skipper</strong>, рассмотрев дело № 2026-КФС, постановил:</p>
+      <p>1. Брак между Пашкой и Дишкой расторгнуть.</p>
+      <p>2. Всё совместно нажитое имущество, включая квартиру, автомобиль и право на заказ в КИФАС.РУ, передать в собственность <strong>Пашке</strong>.</p>
+      <p>3. Ответчице Дишке в удовлетворении требований отказать.</p>
+      
+      <div class="signature-area">
+        <div>
+          <div class="signature-line">Судья _________________</div>
+          <div class="signature-line" style="margin-top:10px;">Дата: 20.10.2026</div>
+        </div>
+        <button class="btn-sign" onclick="signDocument()">Подписать</button>
+      </div>
+
+      <div class="stamp" id="stamp">УТВЕРЖДЕНО</div>
+    </div>
+  </div><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Верховный Суд</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* --- ГЛАВНЫЙ ЭКРАН --- */
+  #introScreen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    z-index: 100; transition: opacity 0.5s;
+  }
+  
+  .emblem { font-size: 80px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2)); }
+  .intro-title { font-family: 'Playfair Display', serif; font-size: 32px; color: #fff; margin-bottom: 10px; }
+  .intro-sub { color: #94a3b8; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
+  
+  .btn-enter {
+    background: #f8fafc; color: #0f172a; border: none;
+    padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+  }
+  .btn-enter:hover { background: #cbd5e1; transform: translateY(-2px); }
+  .btn-enter:active { transform: translateY(0); }
+
+  /* --- ЭКРАН СУДА --- */
+  #courtScreen {
+    display: flex; flex-direction: column; height: 100%;
+    max-width: 800px; margin: 0 auto; width: 100%; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+  }
+
+  .top-bar {
+    display: flex; justify-content: space-between; font-size: 12px;
+    color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 20px;
+  }
+
+  .judge-area { display: flex; justify-content: center; margin-bottom: 20px; }
+  .judge-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .judge-card.active { opacity: 1; }
+  .judge-card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
+  .judge-card.active img { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+  .judge-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .defendants-area { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 0 20px; }
+  .char-card { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: 0.3s; }
+  .char-card.active { opacity: 1; }
+  .char-card img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; }
+  .char-card.pashka.active img { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+  .char-card.dishka.active img { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+  .char-name { font-size: 12px; font-weight: 600; margin-top: 8px; color: #cbd5e1; }
+
+  .dialog-box {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .dialog-speaker { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .dialog-text { font-size: 16px; line-height: 1.6; color: #e2e8f0; }
+
+  .btn-next {
+    align-self: flex-end; background: #334155; color: #fff; border: none;
+    padding: 12px 30px; border-radius: 6px; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 20px; opacity: 0; pointer-events: none; transition: 0.2s;
+  }
+  .btn-next.show { opacity: 1; pointer-events: auto; }
+  .btn-next:hover { background: #475569; }
+
+  /* --- ЭКРАН ТАЙМЕРА --- */
+  #timerScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 150; opacity: 0; pointer-events: none; transition: opacity 1s;
+  }
+  #timerScreen.active { opacity: 1; pointer-events: auto; }
+  
+  .timer-text { color: #94a3b8; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; }
+  .timer-number { font-family: 'Playfair Display', serif; font-size: 80px; color: #fff; font-weight: 700; }
+
+  /* --- ЭКРАН ВЕРДИКТА СУДЬИ --- */
+  #judgeVerdictScreen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 160; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    padding: 20px; text-align: center;
+  }
+  #judgeVerdictScreen.active { opacity: 1; pointer-events: auto; }
+
+  .judge-verdict-avatar {
+    width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #38bdf8; margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+  }
+  .judge-verdict-name { font-family: 'Playfair Display', serif; font-size: 24px; color: #fff; margin-bottom: 15px; }
+  .judge-verdict-text { font-size: 18px; line-height: 1.6; color: #cbd5e1; max-width: 600px; margin-bottom: 30px; }
+  
+  /* --- БУМАГА --- */
+  #verdictPaperScreen {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.5s; padding: 20px;
+    overflow-y: auto;
+  }
+  #verdictPaperScreen.active { opacity: 1; pointer-events: auto; }
+
+  .paper {
+    background: #fff; color: #111; width: 100%; max-width: 500px;
+    padding: 40px; border-radius: 4px; font-family: 'Playfair Display', serif;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: translateY(30px) scale(0.95); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; margin: auto;
+  }
+  #verdictPaperScreen.active .paper { transform: translateY(0) scale(1); }
+
+  .paper h2 { text-align: center; font-size: 20px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+  .paper p { font-size: 15px; line-height: 1.7; margin-bottom: 15px; text-align: justify; }
+  .paper strong { color: #b91c1c; }
+
+  .signature-area {
+    margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px dashed #ccc; padding-top: 20px;
+  }
+  .signature-line { font-family: 'Inter', sans-serif; font-size: 12px; color: #666; }
+  
+  .btn-sign {
+    background: #0f172a; color: #fff; border: none; padding: 12px 30px;
+    border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: 0.2s;
+  }
+  .btn-sign:hover { background: #1e293b; }
+  
+  .stamp {
+    position: absolute; bottom: 20px; right: 20px;
+    border: 3px solid #b91c1c; color: #b91c1c; padding: 5px 15px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 18px;
+    transform: rotate(-10deg); opacity: 0; transition: 0.3s; pointer-events: none;
+  }
+  .stamp.show { opacity: 0.8; animation: stampAnim 0.3s ease-out; }
+  @keyframes stampAnim { 0% { transform: scale(2) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-10deg); opacity: 0.8; } }
+</style>
+</head>
+<body>
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <div id="introScreen">
+    <div class="emblem">⚖️</div>
+    <h1 class="intro-title">Верховный Суд</h1>
+    <p class="intro-sub">Дело о расторжении брака № 2026-КФС</p>
+    <button class="btn-enter" onclick="startCourt()">Войти в зал суда</button>
+  </div>
+
+  <!-- ЭКРАН СУДА -->
+  <div id="courtScreen">
+    <div class="top-bar">
+      <span>СУДЕБНОЕ ЗАСЕДАНИЕ</span>
+      <span>ДЕЛО № 2026-КФС</span>
+    </div>
+
+    <div class="judge-area">
+      <div class="judge-card" id="judgeCard">
+        <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" onerror="this.src='https://via.placeholder.com/80/1e293b/fff?text=СУДЬЯ'">
+        <div class="judge-name">Судья Skipper</div>
+      </div>
+    </div>
+
+    <div class="defendants-area">
+      <div class="char-card pashka" id="pashkaCard">
+        <img src="https://i.postimg.cc/sBw96RYR/pashka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=П'">
+        <div class="char-name">Пашка</div>
+      </div>
+      <div class="char-card dishka" id="dishkaCard">
+        <img src="https://i.postimg.cc/JHyqHdH9/dishka.jpg" onerror="this.src='https://via.placeholder.com/70/1e293b/fff?text=Д'">
+        <div class="char-name">Дишка</div>
+      </div>
+    </div>
+
+    <div class="dialog-box">
+      <div>
+        <div class="dialog-speaker" id="speakerName"></div>
+        <div class="dialog-text" id="textContent"></div>
+      </div>
+      <button class="btn-next" id="nextBtn" onclick="nextStep()">Далее</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ТАЙМЕРА -->
+  <div id="timerScreen">
+    <div class="timer-text">Суд удалился на совещание</div>
+    <div class="timer-number" id="timerNumber">10</div>
+  </div>
+
+  <!-- ЭКРАН ВЕРДИКТА СУДЬИ -->
+  <div id="judgeVerdictScreen">
+    <img src="https://i.postimg.cc/TpKdhj7m/photo-4.jpg" class="judge-verdict-avatar" onerror="this.src='https://via.placeholder.com/120/000/fff?text=СУДЬЯ'">
+    <div class="judge-verdict-name">Судья Skipper</div>
+    <div class="judge-verdict-text" id="judgeVerdictText"></div>
+    <button class="btn-next show" style="position:static; margin-top:20px; opacity:1;" onclick="showPaper()">Огласить приговор</button>
+  </div>
+
+  <!-- БУМАГА -->
+  <div id="verdictPaperScreen">
+    <div class="paper">
+      <h2>Судебное решение</h2>
+      <p>Именем Российской Федерации, суд в составе председательствующего судьи <strong>Skipper</strong>, рассмотрев дело № 2026-КФС, постановил:</p>
+      <p>1. Брак между Пашкой и Дишкой расторгнуть.</p>
+      <p>2. Всё совместно нажитое имущество, включая квартиру, автомобиль и право на заказ в КИФАС.РУ, передать в собственность <strong>Пашке</strong>.</p>
+      <p>3. Ответчице Дишке в удовлетворении требований отказать.</p>
+      
+      <div class="signature-area">
+        <div>
+          <div class="signature-line">Судья _________________</div>
+          <div class="signature-line" style="margin-top:10px;">Дата: 20.10.2026</div>
+        </div>
+        <button class="btn-sign" onclick="signDocument()">Подписать</button>
+      </div>
+
+      <div class="stamp" id="stamp">УТВЕРЖДЕНО</div>
+    </div>
+  </div></script>
