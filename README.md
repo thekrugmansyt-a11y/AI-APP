@@ -1,1 +1,1 @@
-# svadba-game
+# razvod-game
