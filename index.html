@@ -1,0 +1,314 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>AI Assistant (WASM)</title>
+<style>
+  /* ==========================================
+     СТИЛИ (ТА ЖЕ ТЕМНАЯ ТЕМА)
+     ========================================== */
+  :root {
+    --bg-main: #0d0d0d;
+    --bg-panel: #171717;
+    --bg-input: #212121;
+    --bg-msg-user: #2563eb;
+    --bg-msg-bot: #171717;
+    --text-main: #ececec;
+    --text-muted: #8e8e8e;
+    --border-color: #2a2a2a;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --danger: #ef4444;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-family); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); height: 56px; z-index: 10; }
+  .header-title { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .header-title .dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--danger); transition: background-color 0.3s; }
+  .header-title .dot.ready { background-color: #22c55e; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .icon-btn:hover { background: var(--bg-input); color: var(--text-main); }
+  .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+  /* Chat Area */
+  .chat-area { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; height: calc(100vh - 56px - 70px); scroll-behavior: smooth; }
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  .message-row { display: flex; gap: 12px; max-width: 100%; animation: fadeIn 0.3s ease-out forwards; }
+  .message-row.user { flex-direction: row-reverse; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .avatar.bot { background: #1e293b; color: #60a5fa; border: 1px solid #334155; }
+  .avatar.user { background: #1e3a8a; color: #93c5fd; border: 1px solid #2563eb; }
+
+  .message-content { padding: 12px 16px; border-radius: 12px; max-width: 85%; word-wrap: break-word; white-space: pre-wrap; font-size: 15px; line-height: 1.6; }
+  .message-row.user .message-content { background: var(--bg-msg-user); color: white; border-bottom-right-radius: 4px; }
+  .message-row.bot .message-content { background: var(--bg-msg-bot); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; }
+
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 8px; }
+  .typing-indicator span { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+  .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+  .system-msg { text-align: center; color: var(--text-muted); font-size: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; align-self: center; max-width: 90%; }
+
+  /* Input Area */
+  .input-area { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-main); padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border-color); z-index: 10; }
+  .input-wrapper { display: flex; align-items: flex-end; background: var(--bg-input); border-radius: 16px; padding: 8px 8px 8px 16px; border: 1px solid var(--border-color); transition: border-color 0.2s; }
+  .input-wrapper:focus-within { border-color: var(--accent); }
+  textarea { flex: 1; background: transparent; border: none; color: var(--text-main); font-family: var(--font-family); font-size: 16px; resize: none; max-height: 120px; min-height: 24px; padding: 8px 0; outline: none; line-height: 1.4; }
+  textarea::placeholder { color: var(--text-muted); }
+  .send-btn { background: var(--accent); color: white; border: none; border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; margin-left: 8px; margin-bottom: 2px; }
+  .send-btn:hover:not(:disabled) { background: var(--accent-hover); }
+  .send-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+  .send-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+  /* Loader */
+  .loader-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-main); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; transition: opacity 0.5s; }
+  .loader-overlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { color: var(--text-muted); font-size: 14px; text-align: center; padding: 0 20px; }
+  .progress-bar-container { width: 200px; height: 4px; background: #333; border-radius: 2px; margin-top: 15px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader-overlay" id="loaderOverlay">
+  <div class="spinner"></div>
+  <div class="loader-text" id="loaderText">Загрузка модели (WASM, ~350 МБ)...</div>
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-title">
+    <span class="dot" id="statusDot"></span>
+    AI Assistant (CPU)
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="clearChat()" title="Очистить чат">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Chat Area -->
+<div class="chat-area" id="chatArea"></div>
+
+<!-- Input Area -->
+<div class="input-area">
+  <div class="input-wrapper">
+    <textarea id="userInput" placeholder="Напиши сообщение..." rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" disabled>
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================
+     ГЛАВНЫЙ СКРИПТ (Transformers.js + WASM)
+     ========================================== -->
+<script type="module">
+// Импортируем Transformers.js (аналог WebLLM, но с поддержкой CPU)
+import { pipeline, TextStreamer, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+
+// Настройки для WASM (чтобы не требовать COOP/COEP заголовков, как на GitHub Pages)
+env.backends.onnx.wasm.numThreads = 1; 
+
+// ==========================================
+// КОНФИГУРАЦИЯ
+// ==========================================
+const CONFIG = {
+  // Легкая модель, которая точно влезет в память телефона (~350 МБ)
+  modelId: "onnx-community/Qwen2.5-0.5B-Instruct",
+  systemPrompt: "Ты полезный AI-ассистент. Отвечай кратко на русском языке.",
+  maxTokens: 300,
+};
+
+let generator = null;
+let chatHistory = [];
+let isGenerating = false;
+
+// DOM
+const chatArea = document.getElementById('chatArea');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const loaderOverlay = document.getElementById('loaderOverlay');
+const loaderText = document.getElementById('loaderText');
+const progressBar = document.getElementById('progressBar');
+const statusDot = document.getElementById('statusDot');
+
+// ==========================================
+// ИНИЦИАЛИЗАЦИЯ (WASM)
+// ==========================================
+async function initAI() {
+  try {
+    loaderText.textContent = "Загрузка модели Qwen (CPU режим)...";
+
+    // Загружаем пайплайн для генерации текста
+    generator = await pipeline('text-generation', CONFIG.modelId, {
+      device: 'wasm',   // Принудительно используем CPU (WASM)
+      dtype: 'q4',      // Квантование 4-бит (уменьшает размер)
+      progress_callback: (data) => {
+        if (data.status === 'progress') {
+          progressBar.style.width = `${data.progress}%`;
+          loaderText.textContent = `Скачивание: ${data.file || 'модель'} (${Math.round(data.progress)}%)`;
+        }
+      }
+    });
+
+    // Успех
+    loaderOverlay.classList.add('hidden');
+    statusDot.classList.add('ready');
+    sendBtn.disabled = false;
+    userInput.focus();
+    
+    addMessage("Привет! Я работаю на процессоре (WASM). Отвечаю медленнее, но зато запускаюсь на любом телефоне. Спроси что-нибудь!", 'bot');
+
+  } catch (error) {
+    console.error("Ошибка инициализации:", error);
+    loaderOverlay.querySelector('.spinner').style.display = 'none';
+    loaderText.innerHTML = `<span style="color: #ef4444;">❌ Ошибка:</span><br>${error.message}`;
+  }
+}
+
+// ==========================================
+// УПРАВЛЕНИЕ ЧАТОМ
+// ==========================================
+function addMessage(text, sender, isStreaming = false) {
+  const row = document.createElement('div');
+  row.className = `message-row ${sender}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${sender}`;
+  avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+  const content = document.createElement('div');
+  content.className = 'message-content';
+  
+  if (isStreaming) {
+    content.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+  } else {
+    content.textContent = text;
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(content);
+  chatArea.appendChild(row);
+  scrollToBottom();
+  return content;
+}
+
+function scrollToBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
+
+function addSystemMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'system-msg';
+  div.textContent = text;
+  chatArea.appendChild(div);
+  scrollToBottom();
+}
+
+// ==========================================
+// ГЕНЕРАЦИЯ ОТВЕТА
+// ==========================================
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text || isGenerating || !generator) return;
+
+  addMessage(text, 'user');
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  isGenerating = true;
+
+  chatHistory.push({ role: "user", content: text });
+  const botContentDiv = addMessage("", 'bot', true);
+
+  try {
+    // Формируем сообщения (System + History)
+    const messages = [
+      { role: "system", content: CONFIG.systemPrompt },
+      ...chatHistory
+    ];
+
+    // Создаем стример для вывода текста по кусочкам
+    let fullResponse = "";
+    const streamer = new TextStreamer(generator.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (token) => {
+        fullResponse += token;
+        botContentDiv.textContent = fullResponse;
+        scrollToBottom();
+      }
+    });
+
+    // Запускаем генерацию
+    await generator(messages, {
+      max_new_tokens: CONFIG.maxTokens,
+      temperature: 0.7,
+      do_sample: true,
+      streamer: streamer,
+    });
+
+    // Если стример не сработал (иногда бывает), берем финальный текст
+    if (!fullResponse) {
+        botContentDiv.textContent = "Не удалось сгенерировать ответ.";
+    } else {
+        chatHistory.push({ role: "assistant", content: fullResponse });
+    }
+
+  } catch (error) {
+    botContentDiv.textContent = "❌ Ошибка: " + error.message;
+  } finally {
+    isGenerating = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+}
+
+// ==========================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ==========================================
+function clearChat() {
+  if (!confirm("Очистить историю?")) return;
+  chatHistory = [];
+  chatArea.innerHTML = '';
+  addSystemMessage("История очищена.");
+}
+
+userInput.addEventListener('input', () => {
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+});
+
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// Запуск
+initAI();
+</script>
+</body>
+</html>
