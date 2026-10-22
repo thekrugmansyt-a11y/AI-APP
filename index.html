@@ -1,0 +1,748 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Пароли PRO v2</title>
+<style>
+  :root {
+    --bg-1: #0a0e1a;
+    --bg-2: #12182b;
+    --card: rgba(30, 41, 59, 0.6);
+    --card-solid: #1e293b;
+    --border: rgba(148, 163, 184, 0.12);
+    --text: #f1f5f9;
+    --dim: #94a3b8;
+    --muted: #64748b;
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    background: linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    min-height: 100vh;
+    color: var(--text);
+    padding: 16px;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.22;
+    z-index: -1;
+    pointer-events: none;
+  }
+  body::before { width: 350px; height: 350px; background: var(--accent); top: -120px; right: -120px; }
+  body::after { width: 300px; height: 300px; background: var(--accent-2); bottom: -100px; left: -100px; }
+
+  .app { max-width: 500px; margin: 0 auto; }
+  .hidden { display: none !important; }
+
+  /* ============ ЭКРАН ВХОДА ============ */
+  .auth-screen { min-height: 85vh; display: flex; flex-direction: column; justify-content: center; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .auth-logo { text-align: center; font-size: 64px; margin-bottom: 12px; animation: pulse 3s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .auth-title { font-size: 26px; font-weight: 800; text-align: center; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .auth-sub { text-align: center; color: var(--dim); font-size: 13px; margin-bottom: 32px; }
+  .auth-card { background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 24px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+  .input-wrap { position: relative; }
+  .input-wrap .input { padding-right: 48px; }
+  .input { width: 100%; padding: 14px 16px; background: rgba(0,0,0,0.25); border: 1.5px solid transparent; border-radius: 12px; color: var(--text); font-size: 15px; outline: none; transition: all 0.25s; font-family: inherit; }
+  .input:focus { border-color: var(--accent); background: rgba(99, 102, 241, 0.08); }
+  .input::placeholder { color: var(--muted); }
+  .eye-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; background: transparent; border: none; color: var(--dim); font-size: 16px; cursor: pointer; border-radius: 8px; }
+  .strength-meter { height: 4px; background: rgba(0,0,0,0.3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .strength-fill { height: 100%; width: 0%; border-radius: 2px; transition: all 0.3s; }
+  .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
+  .auth-note { text-align: center; font-size: 11px; color: var(--muted); margin-top: 20px; line-height: 1.6; }
+
+  /* ============ ОСНОВНОЙ ЭКРАН ============ */
+  .main-screen { animation: fadeIn 0.4s ease; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .logo { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn { width: 42px; height: 42px; border-radius: 13px; background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); color: var(--text); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s; }
+  .icon-btn:hover { background: var(--accent); transform: translateY(-2px); }
+  .icon-btn:active { transform: scale(0.92); }
+  .icon-btn.panic:hover { background: var(--red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: 0.5; pointer-events: none; }
+  #searchInput { width: 100%; padding: 13px 16px 13px 44px; background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 14px; color: var(--text); font-size: 15px; outline: none; }
+  #searchInput:focus { border-color: var(--accent); }
+  .add-btn { padding: 0 20px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 22px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
+
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-card { background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+  .stat-label { font-size: 10px; color: var(--dim); text-transform: uppercase; font-weight: 600; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .pw-card { background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; padding: 16px; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); transition: all 0.2s; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .pw-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  
+  .pw-avatar { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; background: rgba(0,0,0,0.2); }
+  .pw-avatar img { width: 100%; height: 100%; object-fit: contain; padding: 8px; background: #fff; }
+  
+  .pw-info { flex: 1; min-width: 0; }
+  .pw-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pw-login { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pw-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .pw-action { width: 36px; height: 36px; border-radius: 10px; background: rgba(0,0,0,0.2); border: none; color: var(--dim); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+  .pw-action:hover { background: rgba(99, 102, 241, 0.2); color: var(--accent); }
+  .pw-action:active { transform: scale(0.9); }
+
+  .pw-password-row { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px 12px; }
+  .pw-password { flex: 1; font-family: 'Courier New', monospace; font-size: 15px; letter-spacing: 1px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pw-password.masked { letter-spacing: 3px; }
+  .pw-strength-badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--dim); }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
+
+  /* ============ МОДАЛКИ ============ */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: flex-end; justify-content: center; z-index: 100; animation: fadeIn 0.2s; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--card-solid); border-radius: 24px 24px 0 0; padding: 24px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); border-bottom: none; animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-size: 20px; font-weight: 800; }
+  .modal-close { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.06); border: none; color: var(--text); font-size: 18px; cursor: pointer; }
+
+  /* Генератор */
+  .gen-row { display: flex; gap: 6px; align-items: center; }
+  .gen-btn { padding: 14px 16px; border: none; border-radius: 12px; background: rgba(99, 102, 241, 0.2); color: var(--accent); font-size: 16px; cursor: pointer; }
+  .gen-settings { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .gen-chip { padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid transparent; font-size: 12px; font-weight: 600; color: var(--dim); cursor: pointer; transition: 0.2s; }
+  .gen-chip.active { background: rgba(99, 102, 241, 0.15); border-color: var(--accent); color: var(--accent); }
+
+  input[type="range"] { width: 100%; margin-top: 8px; -webkit-appearance: none; height: 5px; background: rgba(0,0,0,0.3); border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+
+  .btn-save { width: 100%; padding: 15px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 15px; }
+  .btn-danger { width: 100%; padding: 13px; border: 1.5px solid rgba(239, 68, 68, 0.3); border-radius: 12px; background: rgba(239, 68, 68, 0.1); color: var(--red); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+  
+  /* История паролей */
+  .history-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); display: none; }
+  .history-section.show { display: block; }
+  .history-title { font-size: 12px; color: var(--dim); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; }
+  .history-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+  .history-item button { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; }
+
+  /* Тост */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--green); color: #fff; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; opacity: 0; transition: all 0.3s; z-index: 200; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.error { background: var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ЭКРАН ВХОДА -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-logo">🔐</div>
+    <div class="auth-title" id="authTitle">Пароли PRO</div>
+    <div class="auth-sub" id="authSub">Введите мастер-пароль</div>
+    <div class="auth-card">
+      <div class="field" id="confirmField" style="display:none;">
+        <label>Повторите</label>
+        <input type="password" class="input" id="masterConfirm" placeholder="••••••••">
+      </div>
+      <div class="field">
+        <label>Мастер-пароль</label>
+        <div class="input-wrap">
+          <input type="password" class="input" id="masterInput" placeholder="••••••••">
+          <button class="eye-btn" onclick="toggleMasterVisibility()" id="eyeBtn">👁</button>
+        </div>
+      </div>
+      <button class="btn-primary" id="authBtn" onclick="handleAuth()">Войти</button>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </div>
+
+  <!-- ОСНОВНОЙ ЭКРАН -->
+  <div id="mainScreen" class="main-screen hidden">
+    <div class="header">
+      <div class="logo"><span>🔐</span> Пароли PRO</div>
+      <div class="header-actions">
+        <button class="icon-btn panic" onclick="panicMode()" title="Паника">💣</button>
+        <button class="icon-btn" onclick="openSettings()">⚙️</button>
+        <button class="icon-btn" onclick="lockApp()">🔒</button>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Поиск..." oninput="renderList()">
+      </div>
+      <button class="add-btn" onclick="openAddModal()">+</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-label">Всего</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green);" id="statStrong">0</div><div class="stat-label">Ок</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--red);" id="statWeak">0</div><div class="stat-label">Слабые</div></div>
+    </div>
+
+    <div class="list" id="list"></div>
+  </div>
+</div>
+
+<!-- МОДАЛКА РЕДАКТИРОВАНИЯ -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="editModalTitle">Новый пароль</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+
+    <div class="field">
+      <label>Сервис / Сайт</label>
+      <input type="text" class="input" id="editName" placeholder="Google, VK, Банк..." maxlength="40">
+    </div>
+
+    <div class="field">
+      <label>Логин / Email</label>
+      <input type="text" class="input" id="editLogin" placeholder="example@gmail.com" maxlength="60">
+    </div>
+
+    <div class="field">
+      <label>Пароль</label>
+      <div class="gen-row">
+        <div class="input-wrap" style="flex:1;">
+          <input type="text" class="input" id="editPassword" placeholder="Введите или сгенерируйте">
+        </div>
+        <button class="gen-btn" onclick="generatePassword()" title="Сгенерировать">🎲</button>
+      </div>
+      
+      <!-- Настройки генератора -->
+      <div class="gen-settings" id="genSettings">
+        <div class="gen-chip active" data-set="lower" onclick="toggleGenSet(this)">a-z</div>
+        <div class="gen-chip active" data-set="upper" onclick="toggleGenSet(this)">A-Z</div>
+        <div class="gen-chip active" data-set="digits" onclick="toggleGenSet(this)">0-9</div>
+        <div class="gen-chip active" data-set="symbols" onclick="toggleGenSet(this)">!@#$</div>
+        <div class="gen-chip active" data-set="nosimilar" onclick="toggleGenSet(this)">Без похожих (O/0, l/1)</div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--dim); margin-top:10px;">
+        <span>Длина пароля</span><span id="genLengthVal">16</span>
+      </div>
+      <input type="range" id="genLength" min="8" max="32" value="16" oninput="$('genLengthVal').textContent=this.value">
+    </div>
+
+    <div class="field">
+      <label>Заметка</label>
+      <input type="text" class="input" id="editNote" placeholder="Опционально" maxlength="100">
+    </div>
+
+    <!-- История версий -->
+    <div class="history-section" id="historySection">
+      <div class="history-title">История версий</div>
+      <div id="historyList"></div>
+    </div>
+
+    <button class="btn-save" onclick="savePassword()">💾 Сохранить</button>
+    <button class="btn-danger hidden" id="deleteBtn" onclick="deletePassword()">🗑 Удалить</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА НАСТРОЕК -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Настройки</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    
+    <div class="field" style="margin-bottom:24px;">
+      <label>Сменить мастер-пароль</label>
+      <input type="password" class="input" id="newMasterInput" placeholder="Новый пароль" style="margin-bottom:8px;">
+      <input type="password" class="input" id="newMasterConfirm" placeholder="Повторите">
+      <button class="btn-save" style="margin-top:10px;" onclick="changeMasterPassword()">Сменить</button>
+    </div>
+
+    <div class="field" style="padding-top:20px; border-top:1px solid var(--border);">
+      <label>Резервное копирование</label>
+      <button class="btn-danger" style="color:var(--accent); border-color:rgba(99,102,241,0.3); background:rgba(99,102,241,0.1);" onclick="exportEncrypted()">📤 Экспорт (Зашифрованный)</button>
+      <button class="btn-danger" style="color:var(--accent); border-color:rgba(99,102,241,0.3); background:rgba(99,102,241,0.1);" onclick="importEncrypted()">📥 Импорт из файла</button>
+      <button class="btn-danger" style="margin-top:15px;" onclick="wipeAll()">💣 Удалить все данные</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== КОНФИГ ====================
+const STORAGE_KEY = 'pw_vault_pro';
+const CHECK_KEY = 'pw_check';
+const SALT_KEY = 'pw_salt';
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
+
+// Наборы символов для генератора
+const CHARSETS = {
+  lower: 'abcdefghijkmnopqrstuvwxyz',
+  upper: 'ABCDEFGHJKLMNPQRSTUVWXYZ',
+  digits: '23456789',
+  symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?',
+  similar: { 'O': '', '0': '', 'l': '', '1': '', 'I': '' } // Убираем похожие
+};
+
+// ==================== СОСТОЯНИЕ ====================
+let state = {
+  key: null,
+  passwords: [],
+  editingId: null,
+  isFirstTime: false,
+  revealed: new Set()
+};
+
+// ==================== УТИЛИТЫ ====================
+const $ = id => document.getElementById(id);
+
+function showToast(msg, isError = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = 'toast', 2500);
+}
+
+function randomColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+// ==================== КРИПТОГРАФИЯ ====================
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptData(text, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+  const combined = new Uint8Array(iv.length + cipher.byteLength);
+  combined.set(iv, 0); combined.set(new Uint8Array(cipher), iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptData(base64, key) {
+  const combined = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(0, 12) }, key, combined.slice(12));
+  return new TextDecoder().decode(plain);
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ И ВХОД ====================
+function init() {
+  state.isFirstTime = !localStorage.getItem(SALT_KEY);
+  $('authTitle').textContent = state.isFirstTime ? 'Создать хранилище' : 'Пароли PRO';
+  $('authSub').textContent = state.isFirstTime ? 'Придумайте мастер-пароль' : 'Введите мастер-пароль';
+  $('confirmField').style.display = state.isFirstTime ? 'block' : 'none';
+  $('authBtn').textContent = state.isFirstTime ? 'Создать' : 'Войти';
+}
+
+async function handleAuth() {
+  const pw = $('masterInput').value;
+  const errEl = $('authError');
+  errEl.textContent = '';
+  
+  if (!pw || pw.length < 6) return errEl.textContent = 'Минимум 6 символов';
+
+  $('authBtn').disabled = true;
+  try {
+    if (state.isFirstTime) {
+      if (pw !== $('masterConfirm').value) return errEl.textContent = 'Пароли не совпадают';
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      localStorage.setItem(SALT_KEY, btoa(String.fromCharCode(...salt)));
+      
+      const key = await deriveKey(pw, salt);
+      localStorage.setItem(CHECK_KEY, await encryptData('VALID', key));
+      localStorage.setItem(STORAGE_KEY, await encryptData('[]', key));
+      
+      state.key = key; state.passwords = [];
+      enterMain(); showToast('✅ Хранилище создано');
+    } else {
+      const salt = Uint8Array.from(atob(localStorage.getItem(SALT_KEY)), c => c.charCodeAt(0));
+      const key = await deriveKey(pw, salt);
+      
+      try {
+        const check = await decryptData(localStorage.getItem(CHECK_KEY), key);
+        if (check !== 'VALID') throw new Error();
+      } catch { return errEl.textContent = '❌ Неверный пароль'; }
+      
+      state.key = key;
+      state.passwords = JSON.parse(await decryptData(localStorage.getItem(STORAGE_KEY), key));
+      enterMain(); showToast('👋 С возвращением');
+    }
+  } catch (err) { errEl.textContent = '❌ Ошибка: ' + err.message; }
+  finally { $('authBtn').disabled = false; }
+}
+
+function enterMain() {
+  $('authScreen').classList.add('hidden');
+  $('mainScreen').classList.remove('hidden');
+  $('masterInput').value = ''; $('masterConfirm').value = '';
+  renderList();
+}
+
+function lockApp() {
+  state.key = null; state.passwords = []; state.revealed.clear();
+  $('mainScreen').classList.add('hidden');
+  $('authScreen').classList.remove('hidden');
+  $('authError').textContent = ''; $('masterInput').value = '';
+  showToast('🔒 Заблокировано');
+}
+
+function panicMode() {
+  lockApp();
+  $('searchInput').value = '';
+  $('masterInput').value = '';
+  $('masterInput').type = 'password';
+  $('eyeBtn').textContent = '👁';
+  showToast('💣 Паника: экран очищен');
+}
+
+// ==================== РЕНДЕР СПИСКА ====================
+function getStrength(pw) {
+  if (!pw) return { score: 0, color: '#64748b', label: 'Пусто' };
+  let score = 0;
+  if (pw.length >= 8) score += 25;
+  if (pw.length >= 12) score += 20;
+  if (pw.length >= 16) score += 15;
+  if (/[a-z]/.test(pw)) score += 10;
+  if (/[A-Z]/.test(pw)) score += 10;
+  if (/[0-9]/.test(pw)) score += 10;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 10;
+  score = Math.min(100, score);
+  if (score < 40) return { score, color: '#ef4444', label: 'Слабый' };
+  if (score < 70) return { score, color: '#f59e0b', label: 'Средний' };
+  return { score, color: '#10b981', label: 'Надёжный' };
+}
+
+function renderList() {
+  const query = $('searchInput').value.toLowerCase().trim();
+  let filtered = state.passwords;
+  if (query) {
+    filtered = filtered.filter(p => p.name.toLowerCase().includes(query) || (p.login && p.login.toLowerCase().includes(query)));
+  }
+  filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  $('statTotal').textContent = state.passwords.length;
+  $('statStrong').textContent = state.passwords.filter(p => getStrength(p.password).score >= 70).length;
+  $('statWeak').textContent = state.passwords.filter(p => getStrength(p.password).score < 40).length;
+
+  const list = $('list');
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">${query ? '🔍' : '📝'}</div><div>${query ? 'Ничего не найдено' : 'Добавьте первый пароль'}</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const str = getStrength(p.password);
+    const isRev = state.revealed.has(p.id);
+    const displayPw = isRev ? p.password : '•'.repeat(Math.min(p.password.length, 20));
+    const hasHistory = p.history && p.history.length > 0;
+    
+    // Формируем домен для иконки
+    const domain = p.name.replace(/^https?:\/\//, '').split('/')[0].trim();
+    const color = randomColor(p.name);
+    // Используем Google S2 Favicons (работает стабильно)
+    const iconHTML = domain.includes('.') 
+      ? `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" onerror="this.outerHTML='<span style=\\'color:${color};\\'>${p.name.charAt(0).toUpperCase()}</span>'">`
+      : `<span style="color:${color};">${p.name.charAt(0).toUpperCase()}</span>`;
+
+    return `
+      <div class="pw-card">
+        <div class="pw-top">
+          <div class="pw-avatar" style="background:${color}30; border:1px solid ${color}40;">${iconHTML}</div>
+          <div class="pw-info">
+            <div class="pw-name">${escapeHtml(p.name)}</div>
+            <div class="pw-login">${escapeHtml(p.login || '—')}</div>
+          </div>
+          <div class="pw-actions">
+            <button class="pw-action" onclick="toggleReveal(${p.id})">${isRev ? '🙈' : '👁'}</button>
+            <button class="pw-action" onclick="copyPassword(${p.id})">📋</button>
+            <button class="pw-action" onclick="openEditModal(${p.id})">✏️</button>
+          </div>
+        </div>
+        <div class="pw-password-row">
+          <div class="pw-password ${isRev ? '' : 'masked'}">${escapeHtml(displayPw)}</div>
+          <span class="pw-strength-badge" style="background:${str.color}25; color:${str.color};">${str.label}</span>
+        </div>
+        ${p.note ? `<div style="font-size:12px; color:var(--muted); margin-top:10px;">📝 ${escapeHtml(p.note)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function toggleReveal(id) {
+  if (state.revealed.has(id)) state.revealed.delete(id);
+  else state.revealed.add(id);
+  renderList();
+}
+
+async function copyPassword(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (!p) return;
+  try { await navigator.clipboard.writeText(p.password); showToast('📋 Скопировано'); }
+  catch { 
+    const tmp = document.createElement('textarea'); tmp.value = p.password;
+    document.body.appendChild(tmp); tmp.select(); document.execCommand('copy');
+    document.body.removeChild(tmp); showToast('📋 Скопировано'); 
+  }
+}
+
+// ==================== ГЕНЕРАТОР ====================
+function toggleGenSet(el) { el.classList.toggle('active'); }
+
+function generatePassword() {
+  const length = parseInt($('genLength').value);
+  const activeSets = Array.from(document.querySelectorAll('.gen-chip.active')).map(c => c.dataset.set);
+  
+  if (activeSets.length === 0) return showToast('Выберите типы символов!', true);
+
+  let pool = '';
+  let guarantee = [];
+  
+  activeSets.forEach(set => {
+    if (set === 'nosimilar') return; // Это модификатор
+    pool += CHARSETS[set] || '';
+    guarantee.push(CHARSETS[set] || '');
+  });
+
+  let pw = '';
+  // Гарантируем по 1 символу из каждого выбранного набора
+  guarantee.forEach(set => {
+    if (set.length) pw += set[secureRandom(set.length)];
+  });
+
+  while (pw.length < length) {
+    pw += pool[secureRandom(pool.length)];
+  }
+
+  // Убираем похожие, если выбрано
+  if (activeSets.includes('nosimilar')) {
+    pw = pw.split('').filter(c => !['O', '0', 'l', '1', 'I'].includes(c)).join('');
+    while (pw.length < length) pw += pool[secureRandom(pool.length)];
+  }
+
+  // Перемешиваем и обрезаем
+  const arr = pw.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = secureRandom(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  $('editPassword').value = arr.join('').slice(0, length);
+  showToast('🎲 Сгенерировано');
+}
+
+function secureRandom(max) {
+  if (window.crypto && crypto.getRandomValues) {
+    const arr = new Uint32Array(1); crypto.getRandomValues(arr); return arr[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+
+// ==================== РЕДАКТИРОВАНИЕ ====================
+function openAddModal() {
+  state.editingId = null;
+  $('editModalTitle').textContent = 'Новый пароль';
+  $('editName').value = ''; $('editLogin').value = ''; $('editPassword').value = ''; $('editNote').value = '';
+  $('historySection').classList.remove('show');
+  $('deleteBtn').classList.add('hidden');
+  $('editModal').classList.add('show');
+}
+
+function openEditModal(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (!p) return;
+  state.editingId = id;
+  $('editModalTitle').textContent = 'Редактировать';
+  $('editName').value = p.name; $('editLogin').value = p.login || '';
+  $('editPassword').value = p.password; $('editNote').value = p.note || '';
+  $('deleteBtn').classList.remove('hidden');
+
+  // История
+  const histList = $('historyList');
+  if (p.history && p.history.length > 0) {
+    $('historySection').classList.add('show');
+    histList.innerHTML = p.history.map((h, i) => `
+      <div class="history-item">
+        <span>${escapeHtml(h.password)}</span>
+        <span style="font-size:10px; color:var(--muted); margin-left:10px;">${new Date(h.date).toLocaleDateString()}</span>
+        <button onclick="copyHist('${h.password.replace(/'/g, "\\'")}')" title="Копировать">📋</button>
+      </div>
+    `).join('');
+  } else {
+    $('historySection').classList.remove('show');
+  }
+
+  $('editModal').classList.add('show');
+}
+
+function copyHist(pw) {
+  navigator.clipboard.writeText(pw).then(() => showToast('📋 Скопировано'));
+}
+
+function closeEditModal() { $('editModal').classList.remove('show'); state.editingId = null; }
+
+async function savePassword() {
+  const name = $('editName').value.trim();
+  const login = $('editLogin').value.trim();
+  const password = $('editPassword').value;
+  const note = $('editNote').value.trim();
+  if (!name || !password) return showToast('Заполните название и пароль', true);
+
+  if (state.editingId) {
+    const idx = state.passwords.findIndex(x => x.id === state.editingId);
+    if (idx >= 0) {
+      const old = state.passwords[idx];
+      const history = old.history || [];
+      // Если пароль изменился — сохраняем старый в историю
+      if (old.password !== password) {
+        history.unshift({ password: old.password, date: Date.now() });
+        if (history.length > 5) history.pop(); // Храним 5 версий
+      }
+      state.passwords[idx] = { ...old, name, login, password, note, history };
+    }
+  } else {
+    state.passwords.push({ id: Date.now(), name, login, password, note, history: [], createdAt: Date.now() });
+  }
+  await persist(); closeEditModal(); renderList(); showToast('✅ Сохранено');
+}
+
+async function deletePassword() {
+  if (!state.editingId || !confirm('Удалить этот пароль?')) return;
+  state.passwords = state.passwords.filter(x => x.id !== state.editingId);
+  await persist(); closeEditModal(); renderList(); showToast('🗑 Удалено');
+}
+
+async function persist() {
+  if (!state.key) return;
+  localStorage.setItem(STORAGE_KEY, await encryptData(JSON.stringify(state.passwords), state.key));
+}
+
+// ==================== НАСТРОЙКИ ====================
+function openSettings() {
+  $('newMasterInput').value = ''; $('newMasterConfirm').value = '';
+  $('settingsModal').classList.add('show');
+}
+function closeSettings() { $('settingsModal').classList.remove('show'); }
+
+async function changeMasterPassword() {
+  const newPw = $('newMasterInput').value;
+  if (newPw.length < 6) return showToast('Минимум 6 символов', true);
+  if (newPw !== $('newMasterConfirm').value) return showToast('Пароли не совпадают', true);
+  
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  localStorage.setItem(SALT_KEY, btoa(String.fromCharCode(...salt)));
+  const newKey = await deriveKey(newPw, salt);
+  localStorage.setItem(CHECK_KEY, await encryptData('VALID', newKey));
+  state.key = newKey;
+  await persist();
+  closeSettings(); showToast('✅ Пароль сменён');
+}
+
+// ==================== ЭКСПОРТ / ИМПОРТ (ЗАШИФРОВАННЫЙ) ====================
+async function exportEncrypted() {
+  const pw = prompt('Придумайте пароль для файла резервной копии:');
+  if (!pw || pw.length < 4) return showToast('Пароль слишком короткий', true);
+
+  try {
+    showToast('⏳ Шифрование...');
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await deriveKey(pw, salt);
+    const encrypted = await encryptData(JSON.stringify(state.passwords), key);
+    
+    const exportObj = {
+      app: 'PasswordsPRO',
+      version: 2,
+      salt: btoa(String.fromCharCode(...salt)),
+      data: encrypted
+    };
+    
+    const blob = new Blob([JSON.stringify(exportObj)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('📤 Экспортировано');
+  } catch (e) { showToast('Ошибка экспорта', true); }
+}
+
+function importEncrypted() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const obj = JSON.parse(text);
+      
+      if (obj.app !== 'PasswordsPRO') throw new Error('Неверный файл');
+      
+      const pw = prompt('Введите пароль от резервной копии:');
+      if (!pw) return;
+      
+      const salt = Uint8Array.from(atob(obj.salt), c => c.charCodeAt(0));
+      const key = await deriveKey(pw, salt);
+      const decrypted = await decryptData(obj.data, key);
+      const importedPasswords = JSON.parse(decrypted);
+      
+      if (!Array.isArray(importedPasswords)) throw new Error();
+      
+      if (!confirm(`Импортировать ${importedPasswords.length} записей? Текущие данные будут заменены.`)) return;
+      
+      state.passwords = importedPasswords;
+      await persist(); renderList(); closeSettings();
+      showToast('📥 Импортировано');
+    } catch (err) { showToast('❌ Неверный пароль или файл', true); }
+  };
+  input.click();
+}
+
+async function wipeAll() {
+  if (!confirm('Удалить ВСЕ данные?')) return;
+  if (!confirm('Вы уверены? Восстановить будет невозможно.')) return;
+  localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(CHECK_KEY); localStorage.removeItem(SALT_KEY);
+  location.reload();
+}
+
+// Закрытие модалок
+$('editModal').addEventListener('click', e => { if (e.target === $('editModal')) closeEditModal(); });
+$('settingsModal').addEventListener('click', e => { if (e.target === $('settingsModal')) closeSettings(); });
+$('masterInput').addEventListener('keypress', e => { if (e.key === 'Enter') handleAuth(); });
+
+init();
+</script>
+</body>
+</html>
