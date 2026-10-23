@@ -1,0 +1,161 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Skipper VPN - Premium Animation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    background: #02050a; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    overflow: hidden;
+    /* Легкий фоновый градиент для глубины */
+    background: radial-gradient(circle at center, #0a1b3a 0%, #02050a 100%);
+  }
+  
+  /* Сцена */
+  .scene {
+    width: 900px; 
+    height: 506px; /* 16:9 */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1200px;
+  }
+
+  /* --- 1. КРУГЛАЯ АВАТАРКА --- */
+  .avatar-container {
+    position: absolute;
+    width: 300px; 
+    height: 300px;
+    z-index: 10;
+    /* Анимация всей группы аватарки */
+    animation: avatarGroup 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    background: url('avatar.jpg') center/cover no-repeat;
+    border-radius: 50%;
+    box-shadow: 0 0 50px rgba(0, 212, 255, 0.8), inset 0 0 30px rgba(0, 212, 255, 0.4);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Вращающееся неоновое кольцо */
+  .neon-ring {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #00d4ff;
+    border-bottom-color: #0088ff;
+    box-shadow: 0 0 20px #00d4ff;
+    animation: spin 3s linear infinite;
+    z-index: 1;
+  }
+
+  /* Внутреннее свечение */
+  .avatar-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 40px rgba(0, 212, 255, 0.6);
+    z-index: 3;
+    animation: pulseGlow 2s alternate infinite;
+  }
+
+  /* --- 2. ШИРОКИЙ БАННЕР --- */
+  .banner-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0, 212, 255, 0.2);
+    z-index: 5;
+    opacity: 0;
+    /* Анимация появления баннера */
+    animation: bannerReveal 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .banner-bg {
+    width: 100%;
+    height: 100%;
+    background: url('banner.jpg') center/cover no-repeat;
+    /* Медленный наезд камеры */
+    animation: slowZoom 8s infinite linear;
+  }
+
+  /* Виньетка (затемнение по краям) */
+  .banner-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 40%, rgba(0, 10, 25, 0.8) 100%);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  /* --- АНИМАЦИИ --- */
+
+  /* Группа аватарки: появляется, висит, исчезает */
+  @keyframes avatarGroup {
+    0%   { transform: scale(0.5) translateY(50px); opacity: 0; filter: blur(10px); }
+    10%  { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+    25%  { transform: scale(1.02); opacity: 1; } /* Легкий пульс */
+    35%  { transform: scale(1); opacity: 1; }
+    45%  { transform: scale(1.2); opacity: 0; filter: blur(5px); } /* Растворение с увеличением */
+    100% { opacity: 0; } /* Ждем конца цикла */
+  }
+
+  /* Баннер: появляется после аватарки */
+  @keyframes bannerReveal {
+    0%   { opacity: 0; transform: scale(0.9) translateZ(-100px); }
+    40%  { opacity: 0; transform: scale(0.9) translateZ(-100px); } /* Ждем, пока исчезнет аватарка */
+    50%  { opacity: 1; transform: scale(1) translateZ(0); } /* Плавный выход вперед */
+    90%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.05); } /* Плавное растворение */
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes pulseGlow {
+    from { box-shadow: inset 0 0 40px rgba(0, 212, 255, 0.3); }
+    to { box-shadow: inset 0 0 60px rgba(0, 212, 255, 0.8); }
+  }
+
+  @keyframes slowZoom {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.08); }
+  }
+</style>
+</head>
+<body>
+
+  <div class="scene">
+    
+    <!-- Аватарка -->
+    <div class="avatar-container">
+      <div class="neon-ring"></div>
+      <div class="avatar-img"></div>
+      <div class="avatar-glow"></div>
+    </div>
+
+    <!-- Широкий баннер -->
+    <div class="banner-container">
+      <div class="banner-bg"></div>
+      <div class="banner-vignette"></div>
+    </div>
+
+  </div>
+
+</body>
+</html>
